@@ -308,7 +308,7 @@ void processCommand(uint8_t* data){
             txArray32bit(cmd, progData, 2);
             break;
             
-        case CMD_READ_PAGE:
+        case CMD_READ_MAX:
             address = (uint32_t)data[3] 
                     + ((uint32_t)data[4] << 8)
                     + ((uint32_t)data[5] << 16)

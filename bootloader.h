@@ -95,15 +95,14 @@ typedef enum{
     CMD_READ_PAGE_LEN       = 0x03,
     CMD_READ_PROG_LEN       = 0x04,
     CMD_READ_MAX_PROG_SIZE  = 0x05,
-    CMD_READ_DEV_ID         = 0x06,
-    CMD_READ_APP_START_ADDR = 0x07,
+    CMD_READ_APP_START_ADDR = 0x06,
 
     /* erase operations */
     CMD_ERASE_PAGE  = 0x10,
             
     /* flash read memory operations */
     CMD_READ_ADDR   = 0x20,
-    CMD_READ_PAGE   = 0x21,
+    CMD_READ_MAX   = 0x21,
     
     /* flash write operations */
     CMD_WRITE_ROW   = 0x30,

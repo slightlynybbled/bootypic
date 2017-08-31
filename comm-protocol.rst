@@ -102,7 +102,7 @@ string terminator ``\0``.  These are represented in the commands as a string wit
     transmitted: [0x6d] [0x79] [0x20] [0x73] [0x74] [0x72] [0x00]
 
 ****************
-Version 0.1 Command Set
+Command Set
 ****************
 
 ############
@@ -110,6 +110,7 @@ Read Platform
 ############
 
 Character: 0x00
+Command Sets: 0.1
 
 The ``CMD_READ_PLATFORM`` command instructs the microcontroller to return a string containing
 the platform, which usually corresponds to a microcontroller part number::
@@ -122,6 +123,7 @@ Read Version
 ############
 
 Character: 0x01
+Command Sets: 0.1
 
 The ``CMD_READ_VERSION`` command instructs the microcontroller to return a string containing
 the instruction set that it supports::
@@ -134,6 +136,7 @@ Read Row Length
 ############
 
 Character: 0x02
+Command Sets: 0.1
 
 The ``CMD_READ_ROW_LENGTH`` command instructs the microcontroller to return the smallest row length 
 that can be programmed at one time::
@@ -145,10 +148,147 @@ that can be programmed at one time::
 Read Page Length
 ############
 
-Character: 0x02
+Character: 0x03
+Command Sets: 0.1
 
 The ``CMD_READ_PAGE_LENGTH`` command instructs the microcontroller to return the page erasure size 
 in instructions::
 
     master:   [CMD_READ_PAGE_LENGTH]
     response: [CMD_READ_PAGE_LENGTH] [length(7:0)] [length(15:8)]
+
+############
+Read Max Program Memory Length
+############
+
+Character: 0x04
+Command Sets: 0.1
+
+The ``CMD_READ_PROG_LENGTH`` command instructs the microcontroller to return the program length, 
+which is the maximum address that may be programmed to::
+
+    master:   [CMD_READ_PROG_LENGTH]
+    response: [CMD_READ_PROG_LENGTH] [length(7:0)] [length(15:8)] [length(23:16)] [length(31:24)]
+
+############
+Read Max Program Size
+############
+
+Character: 0x05
+Command Sets: 0.1
+
+The ``CMD_READ_MAX_PROG_SIZE`` command instructs the microcontroller to return the maximum programming
+size that it will support in instructions::
+
+    master:   [CMD_READ_MAX_PROG_SIZE]
+    response: [CMD_READ_MAX_PROG_SIZE] [length(7:0)] [length(15:8)]
+
+############
+Read App Start Address
+############
+
+Character: 0x06
+Command Sets: 0.1
+
+The ``CMD_READ_APP_START_ADDRESS`` command instructs the microcontroller to return the starting address
+of the application.  This will usually be 0x1000.  This will be utilized for checking application integrity
+during the verification stage.
+
+    master:   [CMD_READ_MAX_PROG_SIZE]
+    response: [CMD_READ_MAX_PROG_SIZE] [address(7:0)] [address(15:8)]
+
+############
+Erase Page
+############
+
+Character: 0x10
+Command Sets: 0.1
+
+The ``CMD_ERASE_PAGE`` command instructs the microcontroller erase a page of flash memore starting 
+at the provided address.::
+
+    master:   [CMD_ERASE_PAGE] [address(7:0)] [address(15:8)] [address(23:16)] [address(31:24)]
+    response: -
+
+############
+Read Address
+############
+
+Character: 0x20
+Command Sets: 0.1
+
+The ``CMD_READ_ADDRESS`` command instructs the microcontroller read a single value from flash memory 
+and to return that value.
+
+    master:   [CMD_READ_ADDRESS] [address(7:0)] [address(15:8)] [address(23:16)] [address(31:24)]
+    response: [CMD_READ_ADDRESS] [address(7:0)] [address(15:8)] [address(23:16)] [address(31:24)]
+                                 [value(7:0)] [value(15:8)] [value(23:16)] [value(31:24)]
+
+############
+Read Max
+############
+
+Character: 0x21
+Command Sets: 0.1
+
+The ``CMD_READ_MAX`` command instructs the microcontroller read the maximum number of values from 
+flash memory and return them as an array of values.  This allows for much more efficient reading 
+of memory::
+
+    master:   [CMD_READ_ADDRESS] [address(7:0)] [address(15:8)] [address(23:16)] [address(31:24)]
+    response: [CMD_READ_ADDRESS] [address(7:0)] [address(15:8)] [address(23:16)] [address(31:24)]
+                                 [value0(7:0)] [value0(15:8)] [value0(23:16)] [value0(31:24)]
+                                 [value1(7:0)] [value1(15:8)] [value1(23:16)] [value1(31:24)]
+                                 [...]
+                                 [valueX(7:0)] [valueX(15:8)] [valueX(23:16)] [valueX(31:24)]
+
+############
+Write Row
+############
+
+Character: 0x30
+Command Sets: 0.1
+
+The ``CMD_WRITE_ROW`` command instructs the microcontroller to write an entire row of data, as defined
+by the microcontroller datasheet, starting at the address.  In many cases, a row consists of only 2 
+instructions, so it may not be very efficient.::
+
+    master:   [CMD_WRITE_ROW] [address(7:0)] [address(15:8)] [address(23:16)] [address(31:24)]
+                                 [value0(7:0)] [value0(15:8)] [value0(23:16)] [value0(31:24)]
+                                 [value1(7:0)] [value1(15:8)] [value1(23:16)] [value1(31:24)]
+                                 [...]
+                                 [valueX(7:0)] [valueX(15:8)] [valueX(23:16)] [valueX(31:24)]
+
+    response: -
+
+############
+Write Max
+############
+
+Character: 0x31
+Command Sets: 0.1
+
+The ``CMD_WRITE_ROW`` command instructs the microcontroller to write an entire row of data, as defined
+by the return value of ``READ_MAX_PROG_SIZE``, starting at the address.  This is usually a much more 
+efficient method of writing.::
+
+    master:   [CMD_WRITE_ROW] [address(7:0)] [address(15:8)] [address(23:16)] [address(31:24)]
+                              [value0(7:0)] [value0(15:8)] [value0(23:16)] [value0(31:24)]
+                              [value1(7:0)] [value1(15:8)] [value1(23:16)] [value1(31:24)]
+                              [...]
+                              [valueX(7:0)] [valueX(15:8)] [valueX(23:16)] [valueX(31:24)]
+
+    response: -
+
+############
+Start Application
+############
+
+Character: 0x40
+Command Sets: 0.1
+
+The ``CMD_WRITE_ROW`` command instructs the microcontroller to start the application.  Note that the 
+bootloader will no longer respond after the application is started.::
+
+    master:   [CMD_START_APP]
+    response: -
