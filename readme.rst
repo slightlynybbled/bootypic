@@ -6,6 +6,8 @@ To provide a relatively easy-to-use bootloader that is compatible with most PIC2
 series processors.  This bootloader does NOT use interrupts, so your default compilation
 steps should work with only *minor* changes to the linker script.
 
+The communications protocol is described in the comm-protocol.rst document.
+
 ========================
 Supported Devices
 ========================
@@ -13,7 +15,8 @@ Supported Devices
 This list will be updated as I test more devices (which will be slowly).  Each supported device 
 will have a linker script for the bootloader (this project) and the application located in the 
 ``gld`` directory.  You must add the proper linker file to your ``linker files`` in your MPLAB
-project in order to get the bootloader to operate correctly.
+project in order to get the bootloader to operate correctly.  Modification of the stock linker 
+files to be compatible with bootypic is described in the gld directory readme.
 
  - dsPIC33EP32MC204
 
