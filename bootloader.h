@@ -102,7 +102,7 @@ typedef enum{
             
     /* flash read memory operations */
     CMD_READ_ADDR   = 0x20,
-    CMD_READ_MAX   = 0x21,
+    CMD_READ_MAX    = 0x21,
     
     /* flash write operations */
     CMD_WRITE_ROW   = 0x30,
