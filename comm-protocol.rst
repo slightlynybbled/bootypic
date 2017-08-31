@@ -1,5 +1,5 @@
 ========================
-Communication Protol
+Communication Protocol
 ========================
 
 This document describes the communications protocol for the bootypic repository
