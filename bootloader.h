@@ -5,21 +5,40 @@
 #include <stdint.h>
 
 /**
- * @brief do not change these, these defines are utilized to determine
- * the boot pin further down in the file
- */
-#define PORT_A 0
-#define PORT_B 1
-#define PORT_C 2
-
-/**
  * @brief these defines will determine the boot pin to be utilized
  * 
  * When the boot pin is pulled low, then bootloader will start, otherwise
  * the application will start on reset.
  */
-#define BOOT_PORT PORT_C
+// #define BOOT_PORT_A
+// #define BOOT_PORT_B
+#define BOOT_PORT_C
 #define BOOT_PIN 3
+
+/**
+ * @brief choose the RX and TX pins by RP function and port/pin
+ * 
+ * Each pin should have three defines associated with it:
+ *   * port
+ *   * pin number
+ *   * RP assignment
+ * 
+ * Assign the port by defining RX_PORT_A, RX_PORT_B, etc.
+ * Assign the pin by defining RX_PIN 1, RX_PIN 2, etc.
+ * Assign the remappable input by define RX_TO_RP25, RX_TO_RP26, etc.
+ * 
+ * Same pattern for TX pins.
+ * 
+ * In some cases, it may be necessary to add the RPx input to the source
+ * code as well.
+ */
+#define RX_PORT_A
+#define RX_PIN 1
+#define RX_TO_RP25
+
+#define TX_PORT_A 
+#define TX_PIN 4
+#define TX_TO_RP20
 
 /**
  * @brief this is an approximation of the time that the bootloader will remain

@@ -86,10 +86,39 @@ void initUart(void){
     /*        (16 * baudRate)                       */
     U1BRG = 31;
     
+    /* assign the UART1RX pin to a remappable input */
+#if defined(RX_TO_RP25)
     RPINR18bits.U1RXR = 25; /* U1RX assigned to RP25 */
-    TRISAbits.TRISA9 = 1;
+#endif
+    
+    /* make the RX pin an input */
+#if defined RX_PORT_A
+    TRISA |= (1 << RX_PIN);
+    ANSELA &= ~(1 << RX_PIN);
+#elif defined RX_PORT_B
+    TRISB |= (1 << RX_PIN);
+    ANSELB &= ~(1 << RX_PIN);
+#elif defined RX_PORT_C
+    TRISC |= (1 << RX_PIN);
+    ANSELC &= ~(1 << RX_PIN);
+#endif
+    
+    /* assign the UART1TX peripheral to a remappable output */
+#if defined TX_TO_RP20 
     RPOR0bits.RP20R = 0b000001; /* U1TX assigned to RP20 */
-    TRISAbits.TRISA4 = 0;
+#endif 
+    
+    /* make the TX pin an output */
+#if defined TX_PORT_A
+    TRISA &= ~(1 << TX_PIN);
+    ANSELA &= ~(1 << TX_PIN);
+#elif defined TX_PORT_B 
+    TRISB &= ~(1 << TX_PIN);
+    ANSELB &= ~(1 << TX_PIN);
+#elif defined TX_PORT_C 
+    TRISC &= ~(1 << TX_PIN);
+    ANSELC &= ~(1 << TX_PIN);
+#endif
     
     U1MODEbits.UARTEN = 1;  /* enable UART */
     U1STAbits.UTXEN = 1;    /* transmit enabled */
@@ -110,19 +139,19 @@ void initTimers(void){
 }
 
 bool readBootPin(void){
-#if BOOT_PORT == PORT_A
+#if defined(BOOT_PORT_A)
     if(PORTA & (1 << BOOT_PIN))
         return true;
     else
         return false;
     
-#elif BOOT_PORT == PORT_B
+#elif defined(BOOT_PORT_B)
     if(PORTB & (1 << BOOT_PIN))
         return true;
     else
         return false;
     
-#elif BOOT_PORT == PORT_C
+#elif defined(BOOT_PORT_C)
     if(PORTC & (1 << BOOT_PIN))
         return true;
     else
