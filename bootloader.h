@@ -25,20 +25,22 @@
  * 
  * Assign the port by defining RX_PORT_A, RX_PORT_B, etc.
  * Assign the pin by defining RX_PIN 1, RX_PIN 2, etc.
- * Assign the remappable input by define RX_TO_RP25, RX_TO_RP26, etc.
+ * Assign the remappable input by define RX_RPNUM to an RP number
  * 
  * Same pattern for TX pins.
  * 
- * In some cases, it may be necessary to add the RPx input to the source
- * code as well.
+ * If the pin has not been utilized before, it may be necessary to add this 
+ * bit to the source code as well, but in those places, it should be clear
+ * what the user should do in the source code to make compatible with their
+ * application.
  */
 #define RX_PORT_A
 #define RX_PIN 1
-#define RX_TO_RP25
+#define RX_RPNUM 25
 
 #define TX_PORT_A 
 #define TX_PIN 4
-#define TX_TO_RP20
+#define TX_RPNUM 41
 
 /**
  * @brief this is an approximation of the time that the bootloader will remain

@@ -1,9 +1,12 @@
+#include <p33EP32MC204.h>
+
 #include "xc.h"
 #include "config.h"
 #include "bootloader.h"
 
 #define TIME_PER_TMR2_50k 0.213
 #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
+#define U1TX_RPOR_NUM 0b000001
 
 static uint8_t rxBuffer[RX_BUF_LEN];
 static uint16_t rxBufferIndex = 0;
@@ -87,9 +90,7 @@ void initUart(void){
     U1BRG = 31;
     
     /* assign the UART1RX pin to a remappable input */
-#if defined(RX_TO_RP25)
-    RPINR18bits.U1RXR = 25; /* U1RX assigned to RP25 */
-#endif
+    RPINR18bits.U1RXR = RX_RPNUM; /* U1RX assigned to RP25 */
     
     /* make the RX pin an input */
 #if defined RX_PORT_A
@@ -104,8 +105,14 @@ void initUart(void){
 #endif
     
     /* assign the UART1TX peripheral to a remappable output */
-#if defined TX_TO_RP20 
-    RPOR0bits.RP20R = 0b000001; /* U1TX assigned to RP20 */
+#if TX_RPNUM == 20
+    RPOR0bits.RP20R = U1TX_RPOR_NUM;
+#elif TX_RPNUM == 41
+    RPOR3bits.RP41R = U1TX_RPOR_NUM;
+#elif TX_RPNUM == 54
+    RPOR5bits.RP54R = U1TX_RPOR_NUM;
+#elif TX_RPNUM == 55
+    RPOR5bits.RP55R = U1TX_RPOR_NUM;
 #endif 
     
     /* make the TX pin an output */
