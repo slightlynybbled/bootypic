@@ -1,5 +1,3 @@
-#include <p33EP32MC204.h>
-
 #include "xc.h"
 #include "config.h"
 #include "bootloader.h"
@@ -89,6 +87,10 @@ void initUart(void){
     /*        (16 * baudRate)                       */
     U1BRG = 31;
     
+#if !defined(RX_RPNUM)
+#error "RX_RPNUM not defined"
+#endif
+    
     /* assign the UART1RX pin to a remappable input */
     RPINR18bits.U1RXR = RX_RPNUM; /* U1RX assigned to RP25 */
     
@@ -102,6 +104,8 @@ void initUart(void){
 #elif defined RX_PORT_C
     TRISC |= (1 << RX_PIN);
     ANSELC &= ~(1 << RX_PIN);
+#else 
+#error "RX_PORT_X not specified"
 #endif
     
     /* assign the UART1TX peripheral to a remappable output */
@@ -113,6 +117,8 @@ void initUart(void){
     RPOR5bits.RP54R = U1TX_RPOR_NUM;
 #elif TX_RPNUM == 55
     RPOR5bits.RP55R = U1TX_RPOR_NUM;
+#else 
+#error "TX_RPNUM not specified"
 #endif 
     
     /* make the TX pin an output */
@@ -125,6 +131,8 @@ void initUart(void){
 #elif defined TX_PORT_C 
     TRISC &= ~(1 << TX_PIN);
     ANSELC &= ~(1 << TX_PIN);
+#else 
+#error "TX_PORT_X not specified"
 #endif
     
     U1MODEbits.UARTEN = 1;  /* enable UART */

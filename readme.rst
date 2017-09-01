@@ -31,7 +31,10 @@ Environment
 ========================
 
 The anticipated environment is MPLAB X with an XC16 compiler.  This will probably work in other 
-environments, but I am only testing with Microchip-provided tools.  I am compiling with optimizations
-set to -01.
+environments, but I am only testing with Microchip-provided tools.  
+
+In order to be most compatible with devices, the bootloader must fit within a small and well-defined
+memory footprint.  As a result, optimizations must be turned up to -O1 or the application will have 
+to be moved to a higher memory location on some devices with larger flash erase pages.
 
 

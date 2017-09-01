@@ -10,10 +10,8 @@
  * When the boot pin is pulled low, then bootloader will start, otherwise
  * the application will start on reset.
  */
-// #define BOOT_PORT_A
-// #define BOOT_PORT_B
-#define BOOT_PORT_C
-#define BOOT_PIN 3
+#define BOOT_PORT_A
+#define BOOT_PIN 9
 
 /**
  * @brief choose the RX and TX pins by RP function and port/pin
@@ -34,13 +32,13 @@
  * what the user should do in the source code to make compatible with their
  * application.
  */
-#define RX_PORT_A
-#define RX_PIN 1
-#define RX_RPNUM 25
+#define RX_PORT_B
+#define RX_PIN 7
+#define RX_RPNUM 39
 
 #define TX_PORT_A 
 #define TX_PIN 4
-#define TX_RPNUM 41
+#define TX_RPNUM 20
 
 /**
  * @brief this is an approximation of the time that the bootloader will remain
