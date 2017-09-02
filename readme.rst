@@ -19,10 +19,7 @@ project in order to get the bootloader to operate correctly.  Modification of th
 files to be compatible with bootypic is described in the gld directory readme.
 
  - dsPIC33EP32MC204
-
-Future Support:
-
- - dsPIC33EP64MC204
+ - dsPIC33EP64MC504
 
 Contributions in this area are welcome!
 
