@@ -8,6 +8,9 @@ steps should work with only *minor* changes to the linker script.
 
 The communications protocol is described in the comm-protocol.rst document.
 
+Use the command-line utility `booty <https://github.com/slightlynybbled/booty>`_ to upload
+your hex file!
+
 ========================
 Supported Devices
 ========================
