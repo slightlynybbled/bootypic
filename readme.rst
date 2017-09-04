@@ -37,4 +37,12 @@ In order to be most compatible with devices, the bootloader must fit within a sm
 memory footprint.  As a result, optimizations must be turned up to -O1 or the application will have 
 to be moved to a higher memory location on some devices with larger flash erase pages.
 
+========================
+Performance
+========================
 
+The current default transmission unit is 128 instructions and may be adjusted in ``bootloader.h``
+under the ``MAX_PROG_SIZE`` define.  The 128 value was chosen since it is a value that should 
+perform well enough on all platforms.  This value results in a loading time of 17.1s for a 32kB
+device, using `booty <https://github.com/slightlynybbled/booty>`_.  This could likely be significantly
+improved if the ``MAX_PROG_SIZE`` were increased.
