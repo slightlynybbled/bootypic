@@ -12,6 +12,20 @@ Use the command-line utility `booty <https://github.com/slightlynybbled/booty>`_
 your hex file!
 
 ========================
+Features
+========================
+
+ * uses no interrupts - you only need to change a couple of lines in the linker file 
+ * simple
+   - the application is located at the same location in memory across devices 
+   - easy to write your own loader
+ * small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving 
+ lots of room for the application above 0x1000
+ * protects itself - you can't overwrite the bootloader
+ * configurable - see header file, pull a pin low to keep bootloader activated or simply 
+ keep communicating with the board
+
+========================
 Supported Devices
 ========================
 
@@ -23,6 +37,10 @@ files to be compatible with bootypic is described in the gld directory readme.
 
  - dsPIC33EP32MC204
  - dsPIC33EP64MC504
+
+Coming soon:
+
+ - PIC24FV16KM202
 
 Contributions in this area are welcome!
 
@@ -44,5 +62,5 @@ Performance
 The current default transmission unit is 128 instructions and may be adjusted in ``bootloader.h``
 under the ``MAX_PROG_SIZE`` define.  The 128 value was chosen since it is a value that should 
 perform well enough on all platforms.  This value results in a loading time of 17.1s for a 32kB
-device, using `booty <https://github.com/slightlynybbled/booty>`_.  This could likely be significantly
-improved if the ``MAX_PROG_SIZE`` were increased.
+device at 115200 baud, using `booty <https://github.com/slightlynybbled/booty>`_.  This could
+likely be significantly improved if the ``MAX_PROG_SIZE`` were increased.
