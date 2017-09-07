@@ -19,11 +19,9 @@ Features
  * simple
    - the application is located at the same location in memory across devices 
    - easy to write your own loader
- * small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving 
- lots of room for the application above 0x1000
+ * small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving lots of room for the application above 0x1000
  * protects itself - you can't overwrite the bootloader
- * configurable - see header file, pull a pin low to keep bootloader activated or simply 
- keep communicating with the board
+ * configurable - see header file, pull a pin low to keep bootloader activated or simply keep communicating with the board
 
 ========================
 Supported Devices
