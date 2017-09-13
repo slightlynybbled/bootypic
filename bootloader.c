@@ -371,9 +371,9 @@ void processCommand(uint8_t* data){
                     + ((uint32_t)data[5] << 16)
                     + ((uint32_t)data[6] << 24);
             
-            /* do not allow the bootloader to be erased */
-            if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
-                break;
+            /* todo: do not allow the bootloader to be erased */
+            //if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
+            //    break;
             
             eraseByAddress(address);
             

@@ -30,7 +30,24 @@ _readAddress:
     return
     
 _eraseByAddress:
+    push    TBLPAG
     
+    mov	    W0, TBLPAG	; PM page boundary
+    tblwtl  W0, [W0]
+    
+    mov	    #0x405a, W0	    ; erase 4 rows programming memory
+    mov	    W0, NVMCON
+    
+    mov	    #0x55, W0
+    mov	    W0, NVMKEY
+    mov	    #0xAA, W1
+    mov	    W1, NVMKEY
+    bset    NVMCON, #WR
+    
+    nop
+    nop
+    
+    pop	    TBLPAG
     
     return
     
