@@ -1,9 +1,44 @@
 #include "xc.h"
-#include "config.h"
 #include "bootloader.h"
+
+/*********************************************************/
+#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
+#include "config_33epXmc.h" 
+#define TIME_PER_TMR2_50k 0.213
+#define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
+
+/*********************************************************/
+#elif defined __PIC24FV16KM202__
+#include "config_24fvXkm.h"
+
+/* some devices can erase/write multiple rows at a time, but for maximim 
+ * compatibility, we will simply allow erasure/write of one row at a time */
+#define _FLASH_PAGE 32
+#define _FLASH_ROW 32
+
+#define ANSELA ANSA
+#define ANSELB ANSB
+#define TMR2 CCP1TMRL
 
 #define TIME_PER_TMR2_50k 0.213
 #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
+
+/*********************************************************/
+#else 
+#warning "processor may not be currently supported"
+#endif
+/*********************************************************/
+
+/* bootloader starting address (cannot write to addresses between
+ * BOOTLOADER_START_ADDRESS and APPLICATION_START_ADDRESS) */
+#if _FLASH_PAGE == 32
+#define BOOTLOADER_START_ADDRESS 0x200
+#elif _FLASH_PAGE == 512
+#define BOOTLOADER_START_ADDRESS 0x400
+#elif _FLASH_PAGE == 1024
+#define BOOTLOADER_START_ADDRESS 0x800
+#endif
+
 #define U1TX_RPOR_NUM 0b000001
 
 static uint8_t rxBuffer[RX_BUF_LEN];
@@ -44,6 +79,7 @@ void initOsc(void){
     M: 293
     N2: 2
     */
+#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
     CLKDIVbits.PLLPRE = 7;
     PLLFBDbits.PLLDIV = 291;
     CLKDIVbits.PLLPOST = 0b00;
@@ -55,6 +91,10 @@ void initOsc(void){
 
     /* Wait for PLL to lock */
     while (OSCCONbits.LOCK != 1);
+    
+#elif defined __PIC24FV16KM202__
+    CLKDIV = 0;
+#endif
 
     /* Disable nested interrupts */
     INTCON1bits.NSTDIS = 1;
@@ -82,17 +122,19 @@ void initUart(void){
     U1STA = 0x2000;
 
     /* Calculate the baud rate generator contents   */
-    /*           instCycle                          */
+    /*           instFreq                           */
     /*  BRG = --------------- - 1                   */
     /*        (16 * baudRate)                       */
+#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
     U1BRG = 31;
-    
-#if !defined(RX_RPNUM)
-#error "RX_RPNUM not defined"
+#elif defined(__PIC24FV16KM202__)
+    U1BRG = 12;     // assumes 12MIPS, 57600baud
 #endif
     
     /* assign the UART1RX pin to a remappable input */
+#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
     RPINR18bits.U1RXR = RX_RPNUM; /* U1RX assigned to RP25 */
+#endif
     
     /* make the RX pin an input */
 #if defined RX_PORT_A
@@ -108,18 +150,20 @@ void initUart(void){
 #error "RX_PORT_X not specified"
 #endif
     
+#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
     /* assign the UART1TX peripheral to a remappable output */
-#if TX_RPNUM == 20
-    RPOR0bits.RP20R = U1TX_RPOR_NUM;
-#elif TX_RPNUM == 41
-    RPOR3bits.RP41R = U1TX_RPOR_NUM;
-#elif TX_RPNUM == 54
-    RPOR5bits.RP54R = U1TX_RPOR_NUM;
-#elif TX_RPNUM == 55
-    RPOR5bits.RP55R = U1TX_RPOR_NUM;
-#else 
-#error "TX_RPNUM not specified"
-#endif 
+    #if TX_RPNUM == 20
+        RPOR0bits.RP20R = U1TX_RPOR_NUM;
+    #elif TX_RPNUM == 41
+        RPOR3bits.RP41R = U1TX_RPOR_NUM;
+    #elif TX_RPNUM == 54
+        RPOR5bits.RP54R = U1TX_RPOR_NUM;
+    #elif TX_RPNUM == 55
+        RPOR5bits.RP55R = U1TX_RPOR_NUM;
+    #else 
+    #error "TX_RPNUM not specified"
+    #endif 
+#endif
     
     /* make the TX pin an output */
 #if defined TX_PORT_A
@@ -150,7 +194,13 @@ void initTimers(void){
     /* initialize timer2 registers - timer 2 is used for determining if the
      * the bootloader has been engaged recently */
     TMR2 = 0;
+#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
     T2CON = 0x8030; // prescaler = 256
+#elif defined __PIC24FV16KM202__
+    // on some devices, use the CCP1 module as a timer
+    CCP1CON1H = 0x0000;
+    CCP1CON1L = 0x00c0; // prescaler = 64 (4us/tick)
+#endif
 }
 
 bool readBootPin(void){
@@ -315,8 +365,6 @@ void processCommand(uint8_t* data){
             break;
             
         case CMD_ERASE_PAGE:
-            LATCbits.LATC5 = 1;
-            
             /* should correspond to a border */
             address = (uint32_t)data[3] 
                     + ((uint32_t)data[4] << 8)
@@ -336,8 +384,6 @@ void processCommand(uint8_t* data){
                 progData[1] = 0x000000;
                 doubleWordWrite(address, progData);
             }
-            
-            LATCbits.LATC5 = 0;
             
             break;
             

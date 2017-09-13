@@ -102,7 +102,7 @@ _doubleWordWrite:
     
 _startApp:
     call.l  W0
-    
+
     return
 
     .end

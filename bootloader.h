@@ -11,7 +11,7 @@
  * the application will start on reset.
  */
 #define BOOT_PORT_A
-#define BOOT_PIN 9
+#define BOOT_PIN 0
 
 /**
  * @brief choose the RX and TX pins by RP function and port/pin
@@ -33,12 +33,12 @@
  * application.
  */
 #define RX_PORT_B
-#define RX_PIN 7
-#define RX_RPNUM 39
+#define RX_PIN 2
+// #define RX_RPNUM 39  // not necessary on PIC24FV16KM202
 
-#define TX_PORT_A 
-#define TX_PIN 4
-#define TX_RPNUM 20
+#define TX_PORT_B 
+#define TX_PIN 7
+//#define TX_RPNUM 20
 
 /**
  * @brief this is an approximation of the time that the bootloader will remain
@@ -61,7 +61,13 @@
 
 /** @brief the microcontroller platform
  */
+#if defined(__dsPIC33EP32MC204__)
 #define PLATFORM_STRING "dspic33ep32mc204"
+#elif defined(__dsPIC33EP64MC504__)
+#define PLATFORM_STRING "dspic33ep64mc504"
+#elif defined(__PIC24FV16KM202__)
+#define PLATFORM_STRING "pic24fv16km202"
+#endif
 
 /** @brief the version of the transmission protocol
  */
@@ -70,14 +76,6 @@
 /******************************************************************/
 /* end user space - user should not change values below this line**/
 /******************************************************************/
-
-/* bootloader starting address (cannot write to addresses between
- * BOOTLOADER_START_ADDRESS and APPLICATION_START_ADDRESS) */
-#if _FLASH_PAGE == 512
-#define BOOTLOADER_START_ADDRESS 0x400
-#elif _FLASH_PAGE == 1024
-#define BOOTLOADER_START_ADDRESS 0x800
-#endif
 
 #define TX_BUF_LEN  ((MAX_PROG_SIZE * 4) + 0x10)
 #define RX_BUF_LEN  ((MAX_PROG_SIZE * 4) + 0x10)
