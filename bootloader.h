@@ -261,6 +261,8 @@ extern void eraseByAddress(uint32_t address);
  */
 extern void doubleWordWrite(uint32_t address, uint32_t* progDataArray);
 
+void writeInst32(uint32_t address, uint32_t* progDataArray);
+
 /**
  * @brief starts the application
  * @param applicationAddress

@@ -3,28 +3,28 @@
 
 /*********************************************************/
 #if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
-#include "config_33epXmc.h" 
-#define TIME_PER_TMR2_50k 0.213
-#define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
+    #include "config_33epXmc.h" 
+    #define TIME_PER_TMR2_50k 0.213
+    #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
 /*********************************************************/
 #elif defined __PIC24FV16KM202__
-#include "config_24fvXkm.h"
+    #include "config_24fvXkm.h"
 
-/* some devices can erase/write multiple rows at a time, but for maximim 
- * compatibility, we will simply allow erasure/write of one row at a time */
-#define _FLASH_PAGE 32
-#define _FLASH_ROW 32
+    /* some devices can erase/write multiple rows at a time, but for maximim 
+     * compatibility, we will simply allow erasure/write of one row at a time */
+    #define _FLASH_PAGE 32
+    #define _FLASH_ROW 32
 
-#define ANSELA ANSA
-#define ANSELB ANSB
-#define TMR2 CCP1TMRL
+    #define ANSELA ANSA
+    #define ANSELB ANSB
+    #define TMR2 CCP1TMRL
 
-#define TIME_PER_TMR2_50k 0.213
-#define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
+    #define TIME_PER_TMR2_50k 0.213
+    #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
-/*********************************************************/
-#else 
+    /*********************************************************/
+    #else 
 #warning "processor may not be currently supported"
 #endif
 /*********************************************************/
@@ -371,9 +371,9 @@ void processCommand(uint8_t* data){
                     + ((uint32_t)data[5] << 16)
                     + ((uint32_t)data[6] << 24);
             
-            /* todo: do not allow the bootloader to be erased */
-            //if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
-            //    break;
+            /* do not allow the bootloader to be erased */
+            if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
+                break;
             
             eraseByAddress(address);
             
@@ -382,7 +382,8 @@ void processCommand(uint8_t* data){
                 address = 0x00000000;
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
-                doubleWordWrite(address, progData);
+                //doubleWordWrite(address, progData);
+#warning "fix doubleWordWrite here"
             }
             
             break;
@@ -419,25 +420,27 @@ void processCommand(uint8_t* data){
                     + ((uint32_t)data[4] << 8)
                     + ((uint32_t)data[5] << 16)
                     + ((uint32_t)data[6] << 24);
-            progData[0] = (uint32_t)data[7] 
-                    + ((uint32_t)data[8] << 8)
-                    + ((uint32_t)data[9] << 16)
-                    + ((uint32_t)data[10] << 24);
-            progData[1] = (uint32_t)data[11] 
-                    + ((uint32_t)data[12] << 8)
-                    + ((uint32_t)data[13] << 16)
-                    + ((uint32_t)data[14] << 24);
+            
+            for(i=0; i<_FLASH_ROW; i++){
+                progData[i] = (uint32_t)data[i * 4 + 7] 
+                    + ((uint32_t)data[i * 4 + 8] << 8)
+                    + ((uint32_t)data[i * 4 + 9] << 16)
+                    + ((uint32_t)data[i * 4 + 10] << 24);
+            }
             
             /* do not allow the bootloader to be overwritten */
-            if((word >= BOOTLOADER_START_ADDRESS) || (word < APPLICATION_START_ADDRESS))
+            if((word >= BOOTLOADER_START_ADDRESS) && (word < APPLICATION_START_ADDRESS))
                 break;
             
             /* do not allow the reset vector to be changed by the application */
             if(word < __IVT_BASE)
                 break;
             
+#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
             doubleWordWrite(address, progData);
-            
+#elif defined __PIC24FV16KM202__
+            writeInst32(address, progData);
+#endif
             break;
             
         case CMD_WRITE_MAX_PROG_SIZE:
@@ -468,8 +471,9 @@ void processCommand(uint8_t* data){
                 uint32_t addr = address + i;
                 
                 /* do not allow application to overwrite the reset vector */
-                if(addr >= __IVT_BASE)
-                    doubleWordWrite(addr, &progData[i >> 1]);
+                //if(addr >= __IVT_BASE)
+                //    doubleWordWrite(addr, &progData[i >> 1]);
+#warning "fix doubleWordWrite here"
             }
             break;
             
@@ -615,4 +619,27 @@ uint16_t fletcher16(uint8_t* data, uint16_t length){
     checksum = (sum2 << 8) | sum1;
     
 	return checksum;
+}
+
+void writeInst32(uint32_t address, uint32_t* progDataArray){
+    uint16_t offset, i;
+    uint16_t tempTblPag = TBLPAG;
+    
+    //set up NVMCON for row programming
+    NVMCON = 0x4004; // Initialize NVMCON to write 1 row
+    
+    //Set up pointer to the first memory location to be written
+    TBLPAG = 0;                 // initialize PM Page Boundary
+    offset = (uint16_t)(address & 0x0000ffff);  // initialize lower word of address
+    
+    //perform TBLWT instructions to write necessary number of latches
+    for(i=0; i < 32; i++){
+        __builtin_tblwtl(offset, (uint16_t)(progDataArray[i] & 0x0000ffff));            // Write to address low word
+        __builtin_tblwth(offset, (uint16_t)((progDataArray[i] & 0xffff0000) >> 16));    // Write to upper byte
+        offset += 2; // Increment add
+    }
+    
+    __builtin_write_NVM();
+    
+    TBLPAG = tempTblPag;
 }

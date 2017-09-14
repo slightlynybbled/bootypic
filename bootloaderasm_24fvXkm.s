@@ -6,7 +6,6 @@
     .text
     .global _readAddress
     .global _eraseByAddress
-    .global _doubleWordWrite
     .global _startApp
     
 _readAddress:
@@ -48,16 +47,6 @@ _eraseByAddress:
     nop
     
     pop	    TBLPAG
-    
-    return
-    
-load_write_latch_words:
-    
-    
-    return
-    
-_doubleWordWrite:
-    
     
     return
     
