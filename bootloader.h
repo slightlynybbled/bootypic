@@ -113,6 +113,7 @@ typedef enum{
     CMD_READ_PROG_LEN       = 0x04,
     CMD_READ_MAX_PROG_SIZE  = 0x05,
     CMD_READ_APP_START_ADDR = 0x06,
+    CMD_READ_BOOT_START_ADDR = 0x07,
 
     /* erase operations */
     CMD_ERASE_PAGE  = 0x10,

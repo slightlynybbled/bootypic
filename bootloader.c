@@ -11,9 +11,8 @@
 #elif defined __PIC24FV16KM202__
     #include "config_24fvXkm.h"
 
-    /* some devices can erase/write multiple rows at a time, but for maximim 
-     * compatibility, we will simply allow erasure/write of one row at a time */
-    #define _FLASH_PAGE 32
+    /* _FLASH_PAGE should be the maximum erase page (in instructions) */
+    #define _FLASH_PAGE 128
     #define _FLASH_ROW 32
 
     #define ANSELA ANSA
@@ -31,7 +30,7 @@
 
 /* bootloader starting address (cannot write to addresses between
  * BOOTLOADER_START_ADDRESS and APPLICATION_START_ADDRESS) */
-#if _FLASH_PAGE == 32
+#if _FLASH_PAGE == 128
 #define BOOTLOADER_START_ADDRESS 0x200
 #elif _FLASH_PAGE == 512
 #define BOOTLOADER_START_ADDRESS 0x400
@@ -364,6 +363,11 @@ void processCommand(uint8_t* data){
             txArray16bit(cmd, &word, 1);
             break;
             
+        case CMD_READ_BOOT_START_ADDR:
+            word = BOOTLOADER_START_ADDRESS;
+            txArray16bit(cmd, &word, 1);
+            break;
+            
         case CMD_ERASE_PAGE:
             /* should correspond to a border */
             address = (uint32_t)data[3] 
@@ -378,12 +382,24 @@ void processCommand(uint8_t* data){
             eraseByAddress(address);
             
             /* re-initialize the bootloader start address */
-            if(address < (_FLASH_PAGE << 1)){
+            if(address == 0){
+#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
+            
                 address = 0x00000000;
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
-                //doubleWordWrite(address, progData);
-#warning "fix doubleWordWrite here"
+                doubleWordWrite(address, progData);
+#elif defined(__PIC24FV16KM202__)
+                address = 0x00000000;
+                progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
+                progData[1] = 0x000000;
+                
+                for(i=2; i<_FLASH_ROW; i++){
+                    progData[i] = readAddress(i << 1);
+                }
+                
+                writeInst32(address, progData);
+#endif
             }
             
             break;
@@ -467,14 +483,20 @@ void processCommand(uint8_t* data){
             }
             
             // program as a sequence of double-words
+#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
             for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
                 uint32_t addr = address + i;
                 
                 /* do not allow application to overwrite the reset vector */
-                //if(addr >= __IVT_BASE)
-                //    doubleWordWrite(addr, &progData[i >> 1]);
-#warning "fix doubleWordWrite here"
+                if(addr >= __IVT_BASE)
+                    doubleWordWrite(addr, &progData[i >> 1]);
             }
+#else 
+            word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
+            for(i = 0; i < word; i++){
+                writeInst32(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]);
+            }
+#endif
             break;
             
         case CMD_START_APP:

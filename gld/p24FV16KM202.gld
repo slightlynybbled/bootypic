@@ -1,7 +1,7 @@
 /*
- * Linker script for PIC24F16KM202
+ * Linker script for PIC24FV16KM202
  * (c) Copyright 2013 Microchip Technology, Inc
- * Part support version 1.32.B(15-Aug-2017)
+ * Part support version 1.31.A(10-Feb-2017)
  *
  * This software is developed by Microchip Technology Inc. and its
  * subsidiaries ("Microchip").
@@ -34,7 +34,7 @@
  */
 
 
-OUTPUT_ARCH("24F16KM202")
+OUTPUT_ARCH("24FV16KM202")
 CRT0_STARTUP(crt0_standard.o)
 CRT1_STARTUP(crt1_standard.o)
 #if __XC16_VERSION__ > 1027
@@ -61,7 +61,7 @@ MEMORY
   ivt            : ORIGIN = 0x4,           LENGTH = 0xFC
   _reserved      : ORIGIN = 0x100,         LENGTH = 0x4
   aivt           : ORIGIN = 0x104,         LENGTH = 0xFC
-  program (xr)   : ORIGIN = 0x1000,        LENGTH = 0x1c00
+  program (xr)   : ORIGIN = 0x200,         LENGTH = 0x2A00
   eedata         : ORIGIN = 0x7FFE00,      LENGTH = 0x200
   FBS            : ORIGIN = 0xF80000,      LENGTH = 0x2
   FGS            : ORIGIN = 0xF80004,      LENGTH = 0x2
@@ -80,8 +80,8 @@ __FWDT = 0xF8000A;
 __FPOR = 0xF8000C;
 __FICD = 0xF8000E;
 __NO_HANDLES = 1;          /* Suppress handles on this device  */
-__CODE_BASE = 0x1000;
-__CODE_LENGTH = 0x1c00;
+__CODE_BASE = 0x200;
+__CODE_LENGTH = 0x2A00;
 __IVT_BASE  = 0x4;
 __AIVT_BASE = 0x104;
 
@@ -269,6 +269,8 @@ SECTIONS
 /*
 ** These definitions are not required for XC16 versions
 ** later than XC16 v1.25 as the linker defines the addresses.
+**
+** These definitons will cause a link error on a newer compiler
 **
 */
 /*
