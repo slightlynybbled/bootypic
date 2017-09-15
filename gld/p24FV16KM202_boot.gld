@@ -61,7 +61,7 @@ MEMORY
   ivt            : ORIGIN = 0x4,           LENGTH = 0xFC
   _reserved      : ORIGIN = 0x100,         LENGTH = 0x4
   aivt           : ORIGIN = 0x104,         LENGTH = 0xFC
-  program (xr)   : ORIGIN = 0x200,         LENGTH = 0x2A00
+  program (xr)   : ORIGIN = 0x200,         LENGTH = 0xE00  /* reduced to ensure that the bootloader doesn't encroach on application space */
   eedata         : ORIGIN = 0x7FFE00,      LENGTH = 0x200
   FBS            : ORIGIN = 0xF80000,      LENGTH = 0x2
   FGS            : ORIGIN = 0xF80004,      LENGTH = 0x2
@@ -81,7 +81,7 @@ __FPOR = 0xF8000C;
 __FICD = 0xF8000E;
 __NO_HANDLES = 1;          /* Suppress handles on this device  */
 __CODE_BASE = 0x200;
-__CODE_LENGTH = 0x2A00;
+__CODE_LENGTH = 0xE00;
 __IVT_BASE  = 0x4;
 __AIVT_BASE = 0x104;
 

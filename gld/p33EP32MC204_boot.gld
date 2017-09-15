@@ -59,7 +59,7 @@ MEMORY
   data  (a!xr)   : ORIGIN = 0x1000,        LENGTH = 0x1000
   reset          : ORIGIN = 0x0,           LENGTH = 0x4
   ivt            : ORIGIN = 0x4,           LENGTH = 0x1FC
-  program (xr)   : ORIGIN = 0x400,         LENGTH = 0x53EC
+  program (xr)   : ORIGIN = 0x400,         LENGTH = 0xC00 /* reduced to ensure that the bootloader doesn't encroach on application space */
   FICD           : ORIGIN = 0x57F0,        LENGTH = 0x2
   FPOR           : ORIGIN = 0x57F2,        LENGTH = 0x2
   FWDT           : ORIGIN = 0x57F4,        LENGTH = 0x2
@@ -84,7 +84,7 @@ __FUID2 = 0x800FFC;
 __FUID3 = 0x800FFE;
 __NO_HANDLES = 1;          /* Suppress handles on this device  */
 __CODE_BASE = 0x200;
-__CODE_LENGTH = 0x55EC;
+__CODE_LENGTH = 0xC00;
 __IVT_BASE  = 0x4;
 
 __DATA_BASE = 0x1000;
