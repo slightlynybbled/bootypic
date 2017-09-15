@@ -41,6 +41,10 @@ files to be compatible with bootypic is described in the gld directory readme.
 
 Contributions in this area are welcome!
 
+This bootloader utilizes 1 UART, 2 timers, and 1 GPIO.  There is no reason that the application
+cannot assume control of these peripherals.  No interrupts are utilized so the application has full
+control of the device once control is passed to the application.
+
 ========================
 Environment
 ========================
@@ -49,7 +53,7 @@ The anticipated environment is MPLAB X with an XC16 compiler.  This will probabl
 environments, but I am only testing with Microchip-provided tools.  
 
 In order to be most compatible with devices, the bootloader must fit within a small and well-defined
-memory footprint.  As a result, optimizations must be turned up to -O1 or the application will have 
+memory footprint.  As a result, optimizations must be turned up to ``-O1`` or the application will have 
 to be moved to a higher memory location on some devices with larger flash erase pages.
 
 Your MPLAB X project should be structured similarly to the below:
@@ -59,6 +63,43 @@ Your MPLAB X project should be structured similarly to the below:
 The intent is for the ``config.h`` and ``bootloader_33epXkm.h`` should be customized for your device and application
 while all else simply works.  I still haven't worked out how I should set up the oscillator on all platforms for 
 consistency, but I will get to that.
+
+========================
+Compiling/Loading
+========================
+
+------------------------
+Supported Devices
+------------------------
+
+1. Copy ``bootloader.c`` and ``bootloader.h`` into a directory.
+2. Create your MPLAB X project, add ``bootloader.h``, ``bootloaderasm_<my device>.s``, and ``<my device>_boot.gld``.
+2. Create an appropriate ``config.h`` file, add to your project.
+3. Modify the ``bootloader_<my device>.h`` as required for your application (pin settings, etc) and add to your project.
+4. Add ``bootloader_<my device>.h`` as an include to ``bootloader.h``
+5. Compile, load using MPLAB ICD3 or similar to get into your device
+6. Use `booty <https://github.com/slightlynybbled/booty>`_ to load your application hex file 
+
+------------------------
+Unsupported Devices
+------------------------
+
+There are many devices that will work well, but may require additional defines to allocate the correct code.  This should be 
+a relatively simple task for anyone who has done any PIC24 or dsPIC programming.
+
+------------------------
+Troubleshooting
+------------------------
+
+You can step through this code just like any other project.  There are a couple of timers, one UART, and a few IO that need 
+to be set up.  In addition, different devices support somewhat different interfaces to flash memory.  Most devices will 
+support some flavor of what is already here.  If you are having trouble, try to answer these questions:
+
+ - is the oscillator correctly set up, including configuration bytes?
+ - are the rx/tx and boot pins correctly set up?
+ - are the timers correctly set up on my device?
+
+Please post any issues within the issues, and if you add device support, please do a pull request!
 
 ========================
 Performance
