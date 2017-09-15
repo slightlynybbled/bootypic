@@ -22,6 +22,8 @@ Features
  * small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving lots of room for the application above 0x1000
  * protects itself - the bootloader will not allow a self-write
  * configurable - see header file, pull a pin low to keep bootloader activated or simply keep communicating with the board
+ * linker scripts protect application area - if you make a change to the code which results in a bootloader overrunning its allotted
+ space, then the linker will throw an error
 
 ========================
 Supported Devices
