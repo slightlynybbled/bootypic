@@ -2,7 +2,7 @@
 #include "bootloader.h"
 
 /*********************************************************/
-#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
+#if defined(__dsPIC33EP32MC204__) | (__dsPIC33EP64MC504__)
     #include "config_33epXmc.h" 
     #define TIME_PER_TMR2_50k 0.213
     #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
@@ -78,7 +78,7 @@ void initOsc(void){
     M: 293
     N2: 2
     */
-#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     CLKDIVbits.PLLPRE = 7;
     PLLFBDbits.PLLDIV = 291;
     CLKDIVbits.PLLPOST = 0b00;
@@ -124,14 +124,14 @@ void initUart(void){
     /*           instFreq                           */
     /*  BRG = --------------- - 1                   */
     /*        (16 * baudRate)                       */
-#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     U1BRG = 31;
 #elif defined(__PIC24FV16KM202__)
     U1BRG = 12;     // assumes 12MIPS, 57600baud
 #endif
     
     /* assign the UART1RX pin to a remappable input */
-#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     RPINR18bits.U1RXR = RX_RPNUM; /* U1RX assigned to RP25 */
 #endif
     
@@ -149,7 +149,7 @@ void initUart(void){
 #error "RX_PORT_X not specified"
 #endif
     
-#if defined __dsPIC33EP32MC204__ || dsPIC33EP64MC504__
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     /* assign the UART1TX peripheral to a remappable output */
     #if TX_RPNUM == 20
         RPOR0bits.RP20R = U1TX_RPOR_NUM;
@@ -193,7 +193,7 @@ void initTimers(void){
     /* initialize timer2 registers - timer 2 is used for determining if the
      * the bootloader has been engaged recently */
     TMR2 = 0;
-#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     T2CON = 0x8030; // prescaler = 256
 #elif defined __PIC24FV16KM202__
     // on some devices, use the CCP1 module as a timer
@@ -384,7 +384,7 @@ void processCommand(uint8_t* data){
             
             /* re-initialize the bootloader start address */
             if(address == 0){
-#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
             
                 address = 0x00000000;
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
@@ -453,7 +453,7 @@ void processCommand(uint8_t* data){
             if(word < __IVT_BASE)
                 break;
             
-#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
             doubleWordWrite(address, progData);
 #elif defined __PIC24FV16KM202__
             writeInst32(address, progData);
@@ -484,7 +484,7 @@ void processCommand(uint8_t* data){
             }
             
             // program as a sequence of double-words
-#if defined(__dsPIC33EP32MC204__) || defined(__dsPIC33EP64MC504__)
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
             for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
                 uint32_t addr = address + i;
                 
