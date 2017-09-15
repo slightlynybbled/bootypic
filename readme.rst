@@ -20,7 +20,7 @@ Features
    - the application is located at the same location in memory across devices 
    - easy to write your own loader
  * small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving lots of room for the application above 0x1000
- * protects itself - you can't overwrite the bootloader
+ * protects itself - the bootloader will not allow a self-write
  * configurable - see header file, pull a pin low to keep bootloader activated or simply keep communicating with the board
 
 ========================
@@ -35,10 +35,7 @@ files to be compatible with bootypic is described in the gld directory readme.
 
  - dsPIC33EP32MC204
  - dsPIC33EP64MC504
-
-Coming soon:
-
- - PIC24FV16KM202
+ - PIC24FV16KM202 (partial support, requires external oscillator at 24MHz)
 
 Contributions in this area are welcome!
 
@@ -52,6 +49,14 @@ environments, but I am only testing with Microchip-provided tools.
 In order to be most compatible with devices, the bootloader must fit within a small and well-defined
 memory footprint.  As a result, optimizations must be turned up to -O1 or the application will have 
 to be moved to a higher memory location on some devices with larger flash erase pages.
+
+Your MPLAB X project should be structured similarly to the below:
+
+    .. image:: https://github.com/slightlynybbled/bootypic/blob/master/docs/img/project-structure-33ep64mc504.png
+
+The intent is for the ``config.h`` and ``bootloader_33epXkm.h`` should be customized for your device and application
+while all else simply works.  I still haven't worked out how I should set up the oscillator on all platforms for 
+consistency, but I will get to that.
 
 ========================
 Performance
