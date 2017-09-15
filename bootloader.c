@@ -199,6 +199,7 @@ void initTimers(void){
     // on some devices, use the CCP1 module as a timer
     CCP1CON1H = 0x0000;
     CCP1CON1L = 0x00c0; // prescaler = 64 (4us/tick)
+    CCP1CON1Lbits.CCPON = 1;
 #endif
 }
 
