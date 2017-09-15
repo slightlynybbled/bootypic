@@ -14,7 +14,7 @@ _readAddress:
     push    TBLPAG
     push    W4
     
-    mov	    #0, W4
+    mov	    W1, W4
     mov	    W4, TBLPAG
     
     ; find the offset, store in W2
@@ -31,7 +31,7 @@ _readAddress:
 _eraseByAddress:
     push    TBLPAG
     
-    mov	    W0, TBLPAG	; PM page boundary
+    mov	    W1, TBLPAG	; PM page boundary
     tblwtl  W0, [W0]
     
     mov	    #0x405a, W0	    ; erase 4 rows programming memory

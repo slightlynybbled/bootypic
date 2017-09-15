@@ -652,7 +652,7 @@ void writeInst32(uint32_t address, uint32_t* progDataArray){
     NVMCON = 0x4004; // Initialize NVMCON to write 1 row
     
     //Set up pointer to the first memory location to be written
-    TBLPAG = 0;                 // initialize PM Page Boundary
+    TBLPAG = (uint16_t)((address & 0x00ff0000) >> 16); // initialize PM Page Boundary
     offset = (uint16_t)(address & 0x0000ffff);  // initialize lower word of address
     
     //perform TBLWT instructions to write necessary number of latches
