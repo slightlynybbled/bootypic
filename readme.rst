@@ -49,7 +49,7 @@ Environment
 ========================
 
 The anticipated environment is MPLAB X with an XC16 compiler.  This will probably work in other 
-environments, but I am only testing with Microchip-provided tools.  
+environments, but I am only testing with Microchip-provided tools at this time.  
 
 In order to be most compatible with devices, the bootloader must fit within a small and well-defined
 memory footprint.  As a result, optimizations must be turned up to ``-O1`` or the application will have 
@@ -62,11 +62,11 @@ Bootloader
 Your MPLAB X project for the bootloader should contain:
 
 * <my_device>_boot.gld - bootloader linker script (device specific)
-* bootloader_<my_device>.h - some handy defines for your device
-* config.h - configuration defines 
+* <my_device>/device.h - some handy defines for your device
+* <my_device>/config.h - configuration defines 
+* <my_device>/bootloaderasm.s - implementations in assembly (device specific)
 * bootloader.h - header for bootloader 
 * bootloader.c - implementations in C 
-* bootloader_<my_device>.s - implementations in assembly (device specific)
 
 The intent is for the ``config.h`` and ``bootloader_<my_device>.h`` should be customized for your device and application
 while all else simply works.  I still haven't worked out how I should set up the oscillator on all platforms for 
