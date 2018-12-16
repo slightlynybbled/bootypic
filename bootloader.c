@@ -79,7 +79,7 @@ void initOsc(void){
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     CLKDIVbits.PLLPRE = 7;
     PLLFBDbits.PLLDIV = 291;
-    CLKDIVbits.PLLPOST = 0b00;
+    CLKDIVbits.PLLPOST = 0x0;
 
     /* Clock switch to incorporate PLL */
     OSCCONbits.NOSC = 1; /* Request new oscillator to be PRI with PLL */
@@ -186,17 +186,17 @@ void initTimers(void){
     /* initialize timer1 registers - timer 1 is used for determining if the 
      * rx buffer should be flushed b/c of local stale data (mis-transfers, 
      * etc) */
-    T1CON = 0x0030; // prescaler = 256 (4.27us/tick)
+    T1CON = 0x0030; /* prescaler = 256 (4.27us/tick) */
     
     /* initialize timer2 registers - timer 2 is used for determining if the
      * the bootloader has been engaged recently */
     TMR2 = 0;
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    T2CON = 0x8030; // prescaler = 256
+    T2CON = 0x8030; /* prescaler = 256 */
 #elif defined __PIC24FV16KM202__
-    // on some devices, use the CCP1 module as a timer
+    /* on some devices, use the CCP1 module as a timer */
     CCP1CON1H = 0x0000;
-    CCP1CON1L = 0x00c0; // prescaler = 64 (4us/tick)
+    CCP1CON1L = 0x00c0; /* prescaler = 64 (4us/tick) */
     CCP1CON1Lbits.CCPON = 1;
 #endif
 }
@@ -464,7 +464,7 @@ void processCommand(uint8_t* data){
                     + ((uint32_t)data[5] << 16)
                     + ((uint32_t)data[6] << 24);
             
-            // fill the progData array
+            /* fill the progData array */
             for(i=0; i<MAX_PROG_SIZE; i++){
                 progData[i] = (uint32_t)data[7 + (i * 4)]
                         + ((uint32_t)data[8 + (i * 4)] << 8)
@@ -481,7 +481,7 @@ void processCommand(uint8_t* data){
                 }
             }
             
-            // program as a sequence of double-words
+            /* program as a sequence of double-words */
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
             for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
                 uint32_t addr = address + i;
@@ -510,19 +510,19 @@ void processCommand(uint8_t* data){
 void txStart(void){
     f16_sum1 = f16_sum2 = 0;
     
-    while(U1STAbits.UTXBF); // wait for tx buffer to empty
+    while(U1STAbits.UTXBF); /* wait for tx buffer to empty */
     U1TXREG = START_OF_FRAME;
 }
 
 void txByte(uint8_t byte){
     if((byte == START_OF_FRAME) || (byte == END_OF_FRAME) || (byte == ESC)){
-        while(U1STAbits.UTXBF); // wait for tx buffer to empty
-        U1TXREG = ESC;          // send escape character
+        while(U1STAbits.UTXBF); /* wait for tx buffer to empty */
+        U1TXREG = ESC;          /* send escape character */
         
-        while(U1STAbits.UTXBF); // wait
+        while(U1STAbits.UTXBF); /* wait */
         U1TXREG = ESC_XOR ^ byte;
     }else{
-        while(U1STAbits.UTXBF); // wait
+        while(U1STAbits.UTXBF); /* wait */
         U1TXREG = byte;
     }
     
@@ -537,7 +537,7 @@ void txEnd(void){
     txByte(sum1);
     txByte(sum2);
     
-    while(U1STAbits.UTXBF); // wait for tx buffer to empty
+    while(U1STAbits.UTXBF); /* wait for tx buffer to empty */
     U1TXREG = END_OF_FRAME;
 }
 
@@ -604,7 +604,7 @@ void txString(uint8_t cmd, char* str){
     
     /* find the length of the version string */
     while(str[length] != 0)  length++;
-    length++;       // be sure to get the string terminator
+    length++;       /* be sure to get the string terminator */
     
     txStart();
 
@@ -646,18 +646,18 @@ void writeInst32(uint32_t address, uint32_t* progDataArray){
     uint16_t offset, i;
     uint16_t tempTblPag = TBLPAG;
     
-    //set up NVMCON for row programming
-    NVMCON = 0x4004; // Initialize NVMCON to write 1 row
+    /* set up NVMCON for row programming */
+    NVMCON = 0x4004; /* Initialize NVMCON to write 1 row */
     
-    //Set up pointer to the first memory location to be written
-    TBLPAG = (uint16_t)((address & 0x00ff0000) >> 16); // initialize PM Page Boundary
-    offset = (uint16_t)(address & 0x0000ffff);  // initialize lower word of address
+    /* Set up pointer to the first memory location to be written */
+    TBLPAG = (uint16_t)((address & 0x00ff0000) >> 16); /* initialize PM Page Boundary */
+    offset = (uint16_t)(address & 0x0000ffff);  /* initialize lower word of address */
     
-    //perform TBLWT instructions to write necessary number of latches
+    /* perform TBLWT instructions to write necessary number of latches */
     for(i=0; i < 32; i++){
-        __builtin_tblwtl(offset, (uint16_t)(progDataArray[i] & 0x0000ffff));            // Write to address low word
-        __builtin_tblwth(offset, (uint16_t)((progDataArray[i] & 0xffff0000) >> 16));    // Write to upper byte
-        offset += 2; // Increment add
+        __builtin_tblwtl(offset, (uint16_t)(progDataArray[i] & 0x0000ffff));            /* Write to address low word */
+        __builtin_tblwth(offset, (uint16_t)((progDataArray[i] & 0xffff0000) >> 16));    /* Write to upper byte */
+        offset += 2; /* Increment add */
     }
     
     __builtin_write_NVM();
