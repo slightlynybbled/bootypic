@@ -19,9 +19,9 @@ Features
 * simple
   - the application is located at the same location in memory across devices 
   - easy to write your own loader
-* small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving lots of room for the application above 0x1000
+* small - the bootloader is located between 0x400 and 0x1000 on most devices, leaving lots of room for the application above 0x1000
 * protects itself - the bootloader will not allow a self-write
-* configurable - see header file, pull a pin low to keep bootloader activated or simply keep communicating with the board
+* configurable - see boot_config.h file, pull a pin low to keep bootloader activated or simply keep communicating with the board
 * linker scripts protect application area - if you make a change to the code which results in a bootloader overrunning its allotted space, then the linker will throw an error
 
 ========================
@@ -61,10 +61,10 @@ Bootloader
 
 Your MPLAB X project for the bootloader should contain:
 
-* <my_device>_boot.gld - bootloader linker script (device specific)
-* <my_device>/config.h - configuration defines
-* <my_device>/boot_config.h - some handy defines for your device
-* <my_device>/bootloaderasm.s - implementations in assembly (device specific)
+* devices/<my_device>_boot.gld - bootloader linker script (device specific)
+* devices/<my_device>/config.h - configuration defines
+* devices/<my_device>/boot_config.h - some handy defines for your device
+* devices/<my_device>/bootloaderasm.s - implementations in assembly (device specific)
 * bootloader.h - header for bootloader 
 * bootloader.c - implementations in C 
 
