@@ -66,7 +66,7 @@ Your MPLAB X project for the bootloader should be structured similarly to the be
   * config.h - configuration defines 
   * bootloader.h - header for bootloader 
   * bootloader.c - implementations in C 
-  * bootloader_<my_device>.h - implementations in assembly (device specific)
+  * bootloader_<my_device>.s - implementations in assembly (device specific)
 
 The intent is for the ``config.h`` and ``bootloader_<my_device>.h`` should be customized for your device and application
 while all else simply works.  I still haven't worked out how I should set up the oscillator on all platforms for 
