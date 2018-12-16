@@ -1,16 +1,14 @@
 #include "xc.h"
+#include "config.h" 
 #include "bootloader.h"
 
 /*********************************************************/
 #if defined(__dsPIC33EP32MC204__) | (__dsPIC33EP64MC504__)
-    #include "config.h" 
     #define TIME_PER_TMR2_50k 0.213
     #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
 /*********************************************************/
 #elif defined __PIC24FV16KM202__
-    #include "config_24fvXkm.h"
-
     /* _FLASH_PAGE should be the maximum erase page (in instructions) */
     #define _FLASH_PAGE 128
     #define _FLASH_ROW 32
