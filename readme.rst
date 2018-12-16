@@ -22,8 +22,7 @@ Features
  * small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving lots of room for the application above 0x1000
  * protects itself - the bootloader will not allow a self-write
  * configurable - see header file, pull a pin low to keep bootloader activated or simply keep communicating with the board
- * linker scripts protect application area - if you make a change to the code which results in a bootloader overrunning its allotted
- space, then the linker will throw an error
+ * linker scripts protect application area - if you make a change to the code which results in a bootloader overrunning its allotted space, then the linker will throw an error
 
 ========================
 Supported Devices
@@ -56,13 +55,31 @@ In order to be most compatible with devices, the bootloader must fit within a sm
 memory footprint.  As a result, optimizations must be turned up to ``-O1`` or the application will have 
 to be moved to a higher memory location on some devices with larger flash erase pages.
 
-Your MPLAB X project should be structured similarly to the below:
+------------------------
+Bootloader
+------------------------
 
-    .. image:: https://github.com/slightlynybbled/bootypic/blob/master/docs/img/project-structure-33ep64mc504.png
+Your MPLAB X project for the bootloader should be structured similarly to the below::
 
-The intent is for the ``config.h`` and ``bootloader_33epXkm.h`` should be customized for your device and application
+  * <my_device>_boot.gld - bootloader linker script (device specific)
+  * bootloader_<my_device>.h - some handy defines for your device
+  * config.h - configuration defines 
+  * bootloader.h - header for bootloader 
+  * bootloader.c - implementations in C 
+  * bootloader_<my_device>.h - implementations in assembly (device specific)
+
+The intent is for the ``config.h`` and ``bootloader_<my_device>.h`` should be customized for your device and application
 while all else simply works.  I still haven't worked out how I should set up the oscillator on all platforms for 
 consistency, but I will get to that.
+
+------------------------
+Application
+------------------------
+
+Your MPLAB X project for the application should be structured as you please.  The only difference
+between the default application and the bootloader is that the linker script must be modified to move 
+the application to a higher place in memory.  The <my_device>_app.gld scripts located in this repository
+provide a pretty decent place to start.
 
 ========================
 Compiling/Loading
