@@ -15,14 +15,14 @@ your hex file!
 Features
 ========================
 
- * uses no interrupts - you only need to change a couple of lines in the linker file 
- * simple
-   - the application is located at the same location in memory across devices 
-   - easy to write your own loader
- * small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving lots of room for the application above 0x1000
- * protects itself - the bootloader will not allow a self-write
- * configurable - see header file, pull a pin low to keep bootloader activated or simply keep communicating with the board
- * linker scripts protect application area - if you make a change to the code which results in a bootloader overrunning its allotted space, then the linker will throw an error
+* uses no interrupts - you only need to change a couple of lines in the linker file 
+* simple
+  - the application is located at the same location in memory across devices 
+  - easy to write your own loader
+* small - the bootloader is located between 0x400 and 0x1000 on all devices, leaving lots of room for the application above 0x1000
+* protects itself - the bootloader will not allow a self-write
+* configurable - see header file, pull a pin low to keep bootloader activated or simply keep communicating with the board
+* linker scripts protect application area - if you make a change to the code which results in a bootloader overrunning its allotted space, then the linker will throw an error
 
 ========================
 Supported Devices
@@ -34,9 +34,9 @@ will have a linker script for the bootloader (this project) and the application 
 project in order to get the bootloader to operate correctly.  Modification of the stock linker 
 files to be compatible with bootypic is described in the gld directory readme.
 
- - dsPIC33EP32MC204
- - dsPIC33EP64MC504
- - PIC24FV16KM202 (partial support, requires external oscillator at 24MHz)
+- dsPIC33EP32MC204
+- dsPIC33EP64MC504
+- PIC24FV16KM202 (partial support, requires external oscillator at 24MHz)
 
 Contributions in this area are welcome!
 
@@ -59,14 +59,14 @@ to be moved to a higher memory location on some devices with larger flash erase 
 Bootloader
 ------------------------
 
-Your MPLAB X project for the bootloader should be structured similarly to the below::
+Your MPLAB X project for the bootloader should contain:
 
-  * <my_device>_boot.gld - bootloader linker script (device specific)
-  * bootloader_<my_device>.h - some handy defines for your device
-  * config.h - configuration defines 
-  * bootloader.h - header for bootloader 
-  * bootloader.c - implementations in C 
-  * bootloader_<my_device>.s - implementations in assembly (device specific)
+* <my_device>_boot.gld - bootloader linker script (device specific)
+* bootloader_<my_device>.h - some handy defines for your device
+* config.h - configuration defines 
+* bootloader.h - header for bootloader 
+* bootloader.c - implementations in C 
+* bootloader_<my_device>.s - implementations in assembly (device specific)
 
 The intent is for the ``config.h`` and ``bootloader_<my_device>.h`` should be customized for your device and application
 while all else simply works.  I still haven't worked out how I should set up the oscillator on all platforms for 
@@ -89,15 +89,13 @@ Compiling/Loading
 Supported Devices
 ------------------------
 
-For supported devices::
-
-  1. Copy ``bootloader.c`` and ``bootloader.h`` into a directory.
-  2. Create your MPLAB X project, add ``bootloader.h``, ``bootloaderasm_<my device>.s``, and ``<my device>_boot.gld``.
-  3. Create an appropriate ``config.h`` file, add to your project (examples provided).
-  4. Modify the ``bootloader_<my device>.h`` as required for your application (pin settings, etc) and add to your project.
-  5. Add ``bootloader_<my device>.h`` as an include to ``bootloader.h``
-  6. Compile, load using MPLAB ICD3 or similar to get into your device
-  7. Use `booty <https://github.com/slightlynybbled/booty>`_ to load your application hex file 
+1. Copy ``bootloader.c`` and ``bootloader.h`` into a directory.
+2. Create your MPLAB X project, add ``bootloader.h``, ``bootloaderasm_<my device>.s``, and ``<my device>_boot.gld``.
+3. Create an appropriate ``config.h`` file, add to your project (examples provided).
+4. Modify the ``bootloader_<my device>.h`` as required for your application (pin settings, etc) and add to your project.
+5. Add ``bootloader_<my device>.h`` as an include to ``bootloader.h``
+6. Compile, load using MPLAB ICD3 or similar to get into your device
+7. Use `booty <https://github.com/slightlynybbled/booty>`_ to load your application hex file 
 
 ------------------------
 Unsupported Devices
@@ -114,9 +112,9 @@ You can step through this code just like any other project.  There are a couple 
 to be set up.  In addition, different devices support somewhat different interfaces to flash memory.  Most devices will 
 support some flavor of what is already here.  If you are having trouble, try to answer these questions:
 
- - is the oscillator correctly set up, including configuration bytes?
- - are the rx/tx and boot pins correctly set up?
- - are the timers correctly set up on my device?
+- is the oscillator correctly set up, including configuration bytes?
+- are the rx/tx and boot pins correctly set up?
+- are the timers correctly set up on my device?
 
 Please post any issues within the issues, and if you add device support, please do a pull request!
 
