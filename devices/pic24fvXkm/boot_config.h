@@ -11,7 +11,7 @@
  * the application will start on reset.
  */
 #define BOOT_PORT_A
-#define BOOT_PIN 9
+#define BOOT_PIN 0
 
 /**
  * @brief choose the RX and TX pins by RP function and port/pin
@@ -33,10 +33,10 @@
  * application.
  */
 #define RX_PORT_B
-#define RX_PIN 7
+#define RX_PIN 2
 
-#define TX_PORT_A
-#define TX_PIN 4
+#define TX_PORT_B 
+#define TX_PIN 7
 
 /**
  * @brief this is an approximation of the time that the bootloader will remain
@@ -51,5 +51,9 @@
  * allow faster programming operations, but will consume more RAM.
  */
 #define MAX_PROG_SIZE 0x80
+
+/* @brief this is the starting address of the application - must be 
+ * on an even erase page boundary
+ */
 
 #endif
