@@ -89,13 +89,15 @@ Compiling/Loading
 Supported Devices
 ------------------------
 
-1. Copy ``bootloader.c`` and ``bootloader.h`` into a directory.
-2. Create your MPLAB X project, add ``bootloader.h``, ``bootloaderasm_<my device>.s``, and ``<my device>_boot.gld``.
-2. Create an appropriate ``config.h`` file, add to your project.
-3. Modify the ``bootloader_<my device>.h`` as required for your application (pin settings, etc) and add to your project.
-4. Add ``bootloader_<my device>.h`` as an include to ``bootloader.h``
-5. Compile, load using MPLAB ICD3 or similar to get into your device
-6. Use `booty <https://github.com/slightlynybbled/booty>`_ to load your application hex file 
+For supported devices::
+
+  1. Copy ``bootloader.c`` and ``bootloader.h`` into a directory.
+  2. Create your MPLAB X project, add ``bootloader.h``, ``bootloaderasm_<my device>.s``, and ``<my device>_boot.gld``.
+  3. Create an appropriate ``config.h`` file, add to your project (examples provided).
+  4. Modify the ``bootloader_<my device>.h`` as required for your application (pin settings, etc) and add to your project.
+  5. Add ``bootloader_<my device>.h`` as an include to ``bootloader.h``
+  6. Compile, load using MPLAB ICD3 or similar to get into your device
+  7. Use `booty <https://github.com/slightlynybbled/booty>`_ to load your application hex file 
 
 ------------------------
 Unsupported Devices
