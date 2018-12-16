@@ -3,7 +3,7 @@
 
 /*********************************************************/
 #if defined(__dsPIC33EP32MC204__) | (__dsPIC33EP64MC504__)
-    #include "config_33epXmc.h" 
+    #include "config.h" 
     #define TIME_PER_TMR2_50k 0.213
     #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 

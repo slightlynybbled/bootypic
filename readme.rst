@@ -62,13 +62,13 @@ Bootloader
 Your MPLAB X project for the bootloader should contain:
 
 * <my_device>_boot.gld - bootloader linker script (device specific)
-* <my_device>/device.h - some handy defines for your device
-* <my_device>/config.h - configuration defines 
+* <my_device>/config.h - configuration defines
+* <my_device>/boot_config.h - some handy defines for your device
 * <my_device>/bootloaderasm.s - implementations in assembly (device specific)
 * bootloader.h - header for bootloader 
 * bootloader.c - implementations in C 
 
-The intent is for the ``config.h`` and ``bootloader_<my_device>.h`` should be customized for your device and application
+The intent is for the ``config.h`` and ``boot_config.h`` should be customized for your device and application
 while all else simply works.  I still haven't worked out how I should set up the oscillator on all platforms for 
 consistency, but I will get to that.
 
@@ -90,12 +90,11 @@ Supported Devices
 ------------------------
 
 1. Copy ``bootloader.c`` and ``bootloader.h`` into a directory.
-2. Create your MPLAB X project, add ``bootloader.h``, ``bootloaderasm_<my device>.s``, and ``<my device>_boot.gld``.
+2. Create your MPLAB X project, add ``bootloader.h``, ``bootloaderasm.s``, and ``<my device>_boot.gld``.
 3. Create an appropriate ``config.h`` file, add to your project (examples provided).
-4. Modify the ``bootloader_<my device>.h`` as required for your application (pin settings, etc) and add to your project.
-5. Add ``bootloader_<my device>.h`` as an include to ``bootloader.h``
-6. Compile, load using MPLAB ICD3 or similar to get into your device
-7. Use `booty <https://github.com/slightlynybbled/booty>`_ to load your application hex file 
+4. Modify the ``boot_config.h`` as required for your application (pin settings, etc) and add to your project.
+5. Compile, load using MPLAB ICD3 or similar to get into your device
+6. Use `booty <https://github.com/slightlynybbled/booty>`_ to load your application hex file 
 
 ------------------------
 Unsupported Devices
