@@ -166,10 +166,10 @@ Creating a New Linker Script (Bootloader)
 2. Rename to <device>_boot.gld (optional)
 3. Find the ``MEMORY`` region, modify the ``program (xr)`` line
 
-a. ``ORIGIN`` should be ``0x400`` or ``0x800`` depending on the page erase memory
-b. ``LENGTH`` should be the current ``LENGTH - 0xe00`` for bootloaders at 0x400 or ``LENGTH - 0xa00`` for bootloaders located at 0x800 (you can do this in the google search engine, simply type ``0x55ec - 0xe00``)
-c. Scroll down a bit, find ``__CODE_BASE``, make it equal to ``0x1000``
-d. Find ``__CODE_LENGTH``, make it equal to your computed length in part b
+   a. ``ORIGIN`` should be ``0x400`` or ``0x800`` depending on the page erase memory
+   b. ``LENGTH`` should be the current ``LENGTH - 0xe00`` for bootloaders at 0x400 or ``LENGTH - 0xa00`` for bootloaders located at 0x800 (you can do this in the google search engine, simply type ``0x55ec - 0xe00``)
+   c. Scroll down a bit, find ``__CODE_BASE``, make it equal to ``0x1000``
+   d. Find ``__CODE_LENGTH``, make it equal to your computed length in part b
 
 -------------------------------------------
 Creating a New Linker Script (Application)
@@ -179,8 +179,8 @@ Creating a New Linker Script (Application)
 2. Rename to <device>_app.gld (optional)
 3. Find the ``MEMORY`` region, modify the ``program (xr)`` line
 
-a. ``ORIGIN`` should be ``0x1000``
-b. ``LENGTH`` should be the current ``LENGTH`` - ``0xe00`` (you can do this in the google search engine, simply type ``0x55ec - 0xe00``)
-c. Scroll down a bit, find ``__CODE_BASE``, make it equal to ``0x1000``
-d. Find ``__CODE_LENGTH``, make it equal to your computed length in part b
+   a. ``ORIGIN`` should be ``0x1000``
+   b. ``LENGTH`` should be the current ``LENGTH`` - ``0xe00`` (you can do this in the google search engine, simply type ``0x55ec - 0xe00``)
+   c. Scroll down a bit, find ``__CODE_BASE``, make it equal to ``0x1000``
+   d. Find ``__CODE_LENGTH``, make it equal to your computed length in part b
 
