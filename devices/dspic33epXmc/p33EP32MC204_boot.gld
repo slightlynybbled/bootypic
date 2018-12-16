@@ -83,7 +83,7 @@ __FUID1 = 0x800FFA;
 __FUID2 = 0x800FFC;
 __FUID3 = 0x800FFE;
 __NO_HANDLES = 1;          /* Suppress handles on this device  */
-__CODE_BASE = 0x200;
+__CODE_BASE = 0x400;
 __CODE_LENGTH = 0xC00;
 __IVT_BASE  = 0x4;
 
