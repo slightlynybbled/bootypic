@@ -1,6 +1,7 @@
 #ifndef _BOOTY_H
 #define _BOOTY_H
 #include "boot_config.h"
+#include "boot_hooks.h"
 
 /** @brief the version of the transmission protocol
  */
@@ -19,6 +20,8 @@
 #define PLATFORM_STRING "dspic33ep64mc504"
 #elif defined(__PIC24FV16KM202__)
 #define PLATFORM_STRING "pic24fv16km202"
+#elif defined(__PIC24FJ256GB106__)
+#define PLATFORM_STRING "pic24fj256gb106"
 #endif
 
 #define TX_BUF_LEN  ((MAX_PROG_SIZE * 4) + 0x10)

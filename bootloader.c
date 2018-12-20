@@ -21,7 +21,9 @@
     #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
     /*********************************************************/
-    #else 
+#elif defined(__PIC24FJ256GB106__)
+	#define TIME_PER_TMR2_50k 0.213f
+#else
 #warning "processor may not be currently supported"
 #endif
 /*********************************************************/
@@ -36,8 +38,6 @@
 #define BOOTLOADER_START_ADDRESS 0x800
 #endif
 
-#define U1TX_RPOR_NUM 0b000001
-
 static uint8_t rxBuffer[RX_BUF_LEN];
 static uint16_t rxBufferIndex = 0;
 
@@ -45,14 +45,16 @@ static uint8_t f16_sum1 = 0, f16_sum2 = 0;
 static uint16_t t2Counter = 0;
 
 int main(void){
+	// run application-defined starting code here
+	pre_bootloader();
+
     /* initialize the peripherals */
     initOsc();
-    initPins();
     initUart();
     initTimers();
-    
+
     /* wait until something is received on the serial port */
-    while((t2Counter < NUM_OF_TMR2_OVERFLOWS) || (readBootPin() == false)){
+    while(!should_abort_boot(t2Counter * TIME_PER_TMR2_50k)){
         receiveBytes();
         processReceived();
         
@@ -99,41 +101,50 @@ void initOsc(void){
     return;
 }
 
-void initPins(void){
-#if BOOT_PORT == PORT_A
-    ANSELA &= ~(1 << BOOT_PIN);
-    TRISA |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_B
-    ANSELB &= ~(1 << BOOT_PIN);
-    TRISB |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_C
-    ANSELC &= ~(1 << BOOT_PIN);
-    TRISC |= (1 << BOOT_PIN);
-#else
-#error "boot port not specified"
-#endif
-}
-
 void initUart(void){
     U1MODE = 0;
     U1STA = 0x2000;
 
-    /* Calculate the baud rate generator contents   */
-    /*           instFreq                           */
-    /*  BRG = --------------- - 1                   */
-    /*        (16 * baudRate)                       */
+#if defined(__PIC24F256GB106__)
+	if (UART_BAUD_RATE < FCY/4.0f){
+		U1MODEbits.BRGH = 0;   // High Baud Rate Select bit
+		U1BRG = FCY / (16.0f*UART_BAUD_RATE) - 1;
+	} 	else {
+		U1MODEbits.BRGH = 1;
+		U1BRG = FCY / (4.0f*UART_BAUD_RATE) - 1;
+	}   
+#endif
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     U1BRG = 31;
+	/* assign the UART1RX pin to a remappable input */
+ 	RPINR18bits.U1RXR = RX_RPNUM;
+
+    /* assign the UART1TX peripheral to a remappable output */
+	TX_RPxR =_RPOUT_U1TX;
 #elif defined(__PIC24FV16KM202__)
     U1BRG = 12;     // assumes 12MIPS, 57600baud
 #endif
-    
-    /* assign the UART1RX pin to a remappable input */
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    RPINR18bits.U1RXR = RX_RPNUM; /* U1RX assigned to RP25 */
+	
+#if defined(__PIC24F256GB106__)
+	// mark the receive pin as digital
+	if (RX_RPNUM < 16)
+		AD1PCFG |= (1 << RX_RPNUM);
+	else
+		AD1PCFGH |= (1 << RX_RPNUM-16))
+	// assign that pin to UART
+	_U1RXR = RX_RPNUM;
+
+	// mark the transmit pin as digital
+	if (UART_TX_PIN < 16)
+		AD1PCFG |= (1 << UART_TX_PIN);
+	else
+		AD1PCFGH |= (1 << (UART_TX_PIN-16))
+	// assign that pin to UART TX
+	TX_RPxR =_RPOUT_U1TX;
 #endif
-    
-    /* make the RX pin an input */
+	
+	
+/* make the RX pin an input */
 #if defined RX_PORT_A
     TRISA |= (1 << RX_PIN);
     ANSELA &= ~(1 << RX_PIN);
@@ -143,26 +154,9 @@ void initUart(void){
 #elif defined RX_PORT_C
     TRISC |= (1 << RX_PIN);
     ANSELC &= ~(1 << RX_PIN);
-#else 
-#error "RX_PORT_X not specified"
 #endif
-    
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    /* assign the UART1TX peripheral to a remappable output */
-    #if TX_RPNUM == 20
-        RPOR0bits.RP20R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 41
-        RPOR3bits.RP41R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 54
-        RPOR5bits.RP54R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 55
-        RPOR5bits.RP55R = U1TX_RPOR_NUM;
-    #else 
-    #error "TX_RPNUM not specified"
-    #endif 
-#endif
-    
-    /* make the TX pin an output */
+   
+/* make the TX pin an output */
 #if defined TX_PORT_A
     TRISA &= ~(1 << TX_PIN);
     ANSELA &= ~(1 << TX_PIN);
@@ -172,8 +166,6 @@ void initUart(void){
 #elif defined TX_PORT_C 
     TRISC &= ~(1 << TX_PIN);
     ANSELC &= ~(1 << TX_PIN);
-#else 
-#error "TX_PORT_X not specified"
 #endif
     
     U1MODEbits.UARTEN = 1;  /* enable UART */
@@ -201,29 +193,6 @@ void initTimers(void){
 #endif
 }
 
-bool readBootPin(void){
-#if defined(BOOT_PORT_A)
-    if(PORTA & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#elif defined(BOOT_PORT_B)
-    if(PORTB & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#elif defined(BOOT_PORT_C)
-    if(PORTC & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#else
-#error "boot port not specified"
-#endif
-}
 
 void receiveBytes(void){
     while(U1STAbits.URXDA){
