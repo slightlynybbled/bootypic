@@ -33,7 +33,6 @@
  * 
  */
 
-
 OUTPUT_ARCH("24FJ256GB106")
 CRT0_STARTUP(crt0_standard.o)
 CRT1_STARTUP(crt1_standard.o)

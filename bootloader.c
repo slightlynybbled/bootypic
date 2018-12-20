@@ -21,8 +21,9 @@
     #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
     /*********************************************************/
-#elif defined(__PIC24FJ256GB106__)
-	#define TIME_PER_TMR2_50k 0.213f
+#elif defined(FCY)
+	// count * prescale / instruction clock
+	#define TIME_PER_TMR2_50k (50000.0f * 256.0f / FCY)
 #else
 #warning "processor may not be currently supported"
 #endif
@@ -55,9 +56,9 @@ int main(void){
 
     /* wait until something is received on the serial port */
     while(!should_abort_boot(t2Counter * TIME_PER_TMR2_50k)){
+		ClrWdt();
         receiveBytes();
         processReceived();
-        
         if(TMR2 > 50000){
             TMR2 = 0;
             t2Counter++;
@@ -105,9 +106,9 @@ void initUart(void){
     U1MODE = 0;
     U1STA = 0x2000;
 
-#if defined(__PIC24F256GB106__)
+#if defined(UART_BAUD_RATE)
 	if (UART_BAUD_RATE < FCY/4.0f){
-		U1MODEbits.BRGH = 0;   // High Baud Rate Select bit
+		U1MODEbits.BRGH = 0; // High Baud Rate Select bit = off
 		U1BRG = FCY / (16.0f*UART_BAUD_RATE) - 1;
 	} 	else {
 		U1MODEbits.BRGH = 1;
@@ -125,25 +126,32 @@ void initUart(void){
     U1BRG = 12;     // assumes 12MIPS, 57600baud
 #endif
 	
-#if defined(__PIC24F256GB106__)
+#if defined(RX_RPNUM)
 	// mark the receive pin as digital
-	if (RX_RPNUM < 16)
+	#if RX_RPNUM < 16
 		AD1PCFG |= (1 << RX_RPNUM);
-	else
+	#else
 		AD1PCFGH |= (1 << RX_RPNUM-16))
-	// assign that pin to UART
+	#endif
+	// map that pin to UART RX
 	_U1RXR = RX_RPNUM;
 
 	// mark the transmit pin as digital
-	if (UART_TX_PIN < 16)
-		AD1PCFG |= (1 << UART_TX_PIN);
-	else
-		AD1PCFGH |= (1 << (UART_TX_PIN-16))
-	// assign that pin to UART TX
-	TX_RPxR =_RPOUT_U1TX;
+	#if TX_RPNUM < 16
+		AD1PCFG |= (1 << TX_RPNUM);
+	#else
+		AD1PCFGH |= (1 << (TX_RPNUM-16))
+	#endif
+// map that pin to UART TX
+#define RPxR2(x) _RP ## x ## R
+// Additional layer of indirection for token pasting (##) to work as expected
+#define RPxR(x) RPxR2(x)
+	RPxR(TX_RPNUM) = _RPOUT_U1TX;
+#undef RPxR2
+#undef RPxR
 #endif
 	
-	
+
 /* make the RX pin an input */
 #if defined RX_PORT_A
     TRISA |= (1 << RX_PIN);
@@ -178,12 +186,12 @@ void initTimers(void){
     /* initialize timer1 registers - timer 1 is used for determining if the 
      * rx buffer should be flushed b/c of local stale data (mis-transfers, 
      * etc) */
-    T1CON = 0x0030; /* prescaler = 256 (4.27us/tick) */
+    T1CON = 0x0030; /* prescaler = 256 (each tick is 256.0 / FCY seconds) */
     
     /* initialize timer2 registers - timer 2 is used for determining if the
      * the bootloader has been engaged recently */
     TMR2 = 0;
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__) | defined(__PIC24FJ256GB106__)
     T2CON = 0x8030; /* prescaler = 256 */
 #elif defined __PIC24FV16KM202__
     /* on some devices, use the CCP1 module as a timer */
@@ -193,12 +201,12 @@ void initTimers(void){
 #endif
 }
 
-
 void receiveBytes(void){
+	static const uint16_t TMR1_THRESHOLD = (uint16_t)(MESSAGE_TIME / 256.0f * FCY);
     while(U1STAbits.URXDA){
         rxBuffer[rxBufferIndex] = U1RXREG;
         rxBufferIndex++;
-        
+
         TMR1 = TMR2 = 0;
         t2Counter = 0;
         T1CONbits.TON = 1;
@@ -206,7 +214,7 @@ void receiveBytes(void){
     
     /* if the time since the last received has expired, then
      * turn off the timer and reset the buffer */
-    if(TMR1 > 50000){
+    if(TMR1 > TMR1_THRESHOLD){
         uint16_t i;
         T1CONbits.TON = 0;
         TMR1 = 0;

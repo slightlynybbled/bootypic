@@ -28,13 +28,12 @@ static void set_battery_state(BatteryChannel Channel, BatteryState state) {
 }
 
 extern void __delay32(unsigned long cycles); 
-#define __delay_ms(d) \
-  { __delay32( (unsigned long) (((unsigned long long) d)*(FCY)/1000ULL)); }
+#define __delay_ms(d) { __delay32( (unsigned long) (((unsigned long long) d)*(FCY)/1000ULL)); }
+
 void block_ms(uint16_t ms) {
     const int ms_chunk = 128;
     int i;
     ClrWdt();
-
     for (i = 0; i < (ms / ms_chunk); i++) {
         __delay_ms(ms_chunk);
         ClrWdt();
@@ -73,43 +72,11 @@ static void turn_on_power_bus_hybrid_method(void) {
 
 void pre_bootloader(){
 	turn_on_power_bus_hybrid_method();
-/*
-	#if BOOT_PORT == PORT_A
-	    ANSELA &= ~(1 << BOOT_PIN);
-	    TRISA |= (1 << BOOT_PIN);
-	#elif BOOT_PORT == PORT_B
-	    ANSELB &= ~(1 << BOOT_PIN);
-	    TRISB |= (1 << BOOT_PIN);
-	#elif BOOT_PORT == PORT_C
-	    ANSELC &= ~(1 << BOOT_PIN);
-	    TRISC |= (1 << BOOT_PIN);
-	#else
-	#error "boot port not specified"
-	#endif
-*/
 }
 
 bool should_abort_boot(float seconds_since_last_data) {
-	ClrWdt();
-
 	if (seconds_since_last_data>BOOT_LOADER_TIME){
 		return true	;
 	}
 	return false;
-
-/*
-#if defined(BOOT_PORT_A)
-    if(PORTA & (1 << BOOT_PIN))
-        return true;
-#elif defined(BOOT_PORT_B)
-    if(PORTB & (1 << BOOT_PIN))
-        return true;
-#elif defined(BOOT_PORT_C)
-    if(PORTC & (1 << BOOT_PIN))
-        return true;
-#else
-#error "boot port not specified"
-#endif
-*/
-
 }
