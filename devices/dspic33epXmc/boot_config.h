@@ -54,4 +54,7 @@
  */
 #define MAX_PROG_SIZE 0x80
 
+#define TIME_PER_TMR2_50k 0.213
+#define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
+
 #endif

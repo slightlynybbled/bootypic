@@ -2,30 +2,6 @@
 #include "config.h" 
 #include "bootloader.h"
 
-/*********************************************************/
-#if defined(__dsPIC33EP32MC204__) | (__dsPIC33EP64MC504__)
-    #define TIME_PER_TMR2_50k 0.213
-    #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
-
-/*********************************************************/
-#elif defined __PIC24FV16KM202__
-    /* _FLASH_PAGE should be the maximum erase page (in instructions) */
-    #define _FLASH_PAGE 128
-    #define _FLASH_ROW 32
-
-    #define ANSELA ANSA
-    #define ANSELB ANSB
-    #define TMR2 CCP1TMRL
-
-    #define TIME_PER_TMR2_50k 0.213
-    #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
-
-    /*********************************************************/
-    #else 
-#warning "processor may not be currently supported"
-#endif
-/*********************************************************/
-
 /* bootloader starting address (cannot write to addresses between
  * BOOTLOADER_START_ADDRESS and APPLICATION_START_ADDRESS) */
 #if _FLASH_PAGE == 128
@@ -65,38 +41,6 @@ int main(void){
     startApp(APPLICATION_START_ADDRESS);
     
     return 0;
-}
-
-void initOsc(void){
-    /*
-    Input Frequency: 7.370000e+00
-    Output Frequency: 120
-    Error in MHz: 3.277778e-02
-    N1: 9
-    M: 293
-    N2: 2
-    */
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    CLKDIVbits.PLLPRE = 7;
-    PLLFBDbits.PLLDIV = 291;
-    CLKDIVbits.PLLPOST = 0x0;
-
-    /* Clock switch to incorporate PLL */
-    OSCCONbits.NOSC = 1; /* Request new oscillator to be PRI with PLL */
-    OSCCONbits.OSWEN = 1; /* Initiate switch */
-    while (OSCCONbits.COSC != 1); /* Wait for Clock switch to occur */
-
-    /* Wait for PLL to lock */
-    while (OSCCONbits.LOCK != 1);
-    
-#elif defined __PIC24FV16KM202__
-    CLKDIV = 0;
-#endif
-
-    /* Disable nested interrupts */
-    INTCON1bits.NSTDIS = 1;
-
-    return;
 }
 
 void initPins(void){
