@@ -100,9 +100,7 @@ _doubleWordWrite:
     return
     
 _startApp:
-    call.l  W0
-
-    return
+    goto    W0
 
     .end
     

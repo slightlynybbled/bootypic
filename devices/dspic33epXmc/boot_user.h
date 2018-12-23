@@ -44,7 +44,7 @@
  * @brief this is an approximation of the time that the bootloader will remain
  * active at startup before moving on to the application
  */
-#define BOOT_LOADER_TIME (10.0)
+#define BOOT_LOADER_TIME (0.5)
 
 /* @brief this is the maximum size that can be programmed into the microcontroller
  * as part of one transaction using the CMD_WRITE_MAX_PROG_SIZE command 

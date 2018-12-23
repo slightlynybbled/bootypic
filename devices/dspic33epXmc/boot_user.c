@@ -1,7 +1,7 @@
 #include "xc.h"
 #include "boot_user.h"
 
-#define U1TX_RPOR_NUM 0b000001
+#define U1TX_RPOR_NUM 1
 
 void initOsc(void){
     /*
