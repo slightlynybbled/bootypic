@@ -11,7 +11,6 @@
     
 _readAddress:
     ; on entry, address is contained within [W1:W0]
-    
     push    TBLPAG
     push    W4
     

@@ -136,6 +136,15 @@ void txByte(uint8_t byte);
  * @param bytes an array of bytes to transmit
  * @param len the number of bytes to transmit from the array
  */
+void txBytes(uint8_t cmd, uint8_t* bytes, uint16_t len);
+
+/**
+ * @brief convenience function for transmitting an array of bytes with the
+ * associated command
+ * @param cmd the type of message
+ * @param bytes an array of bytes to transmit
+ * @param len the number of bytes to transmit from the array
+ */
 void txArray8bit(uint8_t cmd, uint8_t* bytes, uint16_t len);
 
 /**

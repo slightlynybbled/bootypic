@@ -214,18 +214,13 @@ void processCommand(uint8_t* data){
             /* re-initialize the bootloader start address */
             if(address == 0){
                 address = 0x00000000;
+                
+                /* this is the GOTO BOOTLOADER instruction */
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+                /* write the data */
                 doubleWordWrite(address, progData);
-#elif defined(__PIC24FV16KM202__)
-                for(i=2; i<_FLASH_ROW; i++){
-                    progData[i] = readAddress(i << 1);
-                }
-                
-                writeInst32(address, progData);
-#endif
             }
             
             break;
@@ -277,12 +272,9 @@ void processCommand(uint8_t* data){
             /* do not allow the reset vector to be changed by the application */
             if(word < __IVT_BASE)
                 break;
-            
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+
             doubleWordWrite(address, progData);
-#elif defined __PIC24FV16KM202__
-            writeInst32(address, progData);
-#endif
+
             break;
             
         case CMD_WRITE_MAX_PROG_SIZE:
@@ -309,7 +301,6 @@ void processCommand(uint8_t* data){
             }
             
             /* program as a sequence of double-words */
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
             for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
                 uint32_t addr = address + i;
                 
@@ -317,12 +308,7 @@ void processCommand(uint8_t* data){
                 if(addr >= __IVT_BASE)
                     doubleWordWrite(addr, &progData[i >> 1]);
             }
-#else 
-            word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
-            for(i = 0; i < word; i++){
-                writeInst32(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]);
-            }
-#endif
+
             break;
             
         case CMD_START_APP:
@@ -368,15 +354,12 @@ void txEnd(void){
     U1TXREG = END_OF_FRAME;
 }
 
-/* todo: unify the array transmissions */
-void txArray8bit(uint8_t cmd, uint8_t* bytes, uint16_t len){
+void txBytes(uint8_t cmd, uint8_t* bytes, uint16_t len){
     uint16_t i;
     
     txStart();
-    
     txByte((uint8_t)(len & 0x00ff));
     txByte((uint8_t)((len & 0xff00) >> 8));
-    
     txByte(cmd);
     
     for(i=0; i<len; i++){
@@ -387,44 +370,13 @@ void txArray8bit(uint8_t cmd, uint8_t* bytes, uint16_t len){
 }
 
 void txArray16bit(uint8_t cmd, uint16_t* words, uint16_t len){
-    uint16_t i;
     uint16_t length = len << 1;
-    
-    txStart();
-    
-    txByte((uint8_t)(length & 0x00ff));
-    txByte((uint8_t)((length & 0xff00) >> 8));
-    
-    txByte(cmd);
-    
-    for(i=0; i<len; i++){
-        txByte((uint8_t)(words[i] & 0x00ff));
-        txByte((uint8_t)((words[i] & 0xff00) >> 8));
-    }
-    
-    txEnd();
+    txBytes(cmd, (uint8_t*) words, length);
 }
 
 void txArray32bit(uint8_t cmd, uint32_t* words, uint16_t len){
-    uint16_t i;
     uint16_t length = len << 2;
-    
-    txStart();
-    
-    txByte((uint8_t)(length & 0x00ff));
-    txByte((uint8_t)((length & 0xff00) >> 8));
-    
-    txByte(cmd);
-    
-    for(i=0; i<len; i++){
-        uint32_t word = words[i];
-        txByte((uint8_t)(word & 0x000000ff));
-        txByte((uint8_t)((word & 0x0000ff00) >> 8));
-        txByte((uint8_t)((word & 0x00ff0000) >> 16));
-        txByte((uint8_t)((word & 0xff000000) >> 24));
-    }
-    
-    txEnd();
+    txBytes(cmd, (uint8_t*) words, length);
 }
 
 void txString(uint8_t cmd, char* str){
