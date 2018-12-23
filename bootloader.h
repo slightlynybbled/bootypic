@@ -1,6 +1,6 @@
 #ifndef _BOOTY_H
 #define _BOOTY_H
-#include "boot_config.h"
+#include "boot_user.h"
 
 /** @brief the version of the transmission protocol
  */
