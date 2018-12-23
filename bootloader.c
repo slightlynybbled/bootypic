@@ -12,8 +12,6 @@
 #define BOOTLOADER_START_ADDRESS 0x800
 #endif
 
-#define U1TX_RPOR_NUM 0b000001
-
 static uint8_t rxBuffer[RX_BUF_LEN];
 static uint16_t rxBufferIndex = 0;
 
@@ -53,117 +51,6 @@ void initPins(void){
 #elif BOOT_PORT == PORT_C
     ANSELC &= ~(1 << BOOT_PIN);
     TRISC |= (1 << BOOT_PIN);
-#else
-#error "boot port not specified"
-#endif
-}
-
-void initUart(void){
-    U1MODE = 0;
-    U1STA = 0x2000;
-
-    /* Calculate the baud rate generator contents   */
-    /*           instFreq                           */
-    /*  BRG = --------------- - 1                   */
-    /*        (16 * baudRate)                       */
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    U1BRG = 31;
-#elif defined(__PIC24FV16KM202__)
-    U1BRG = 12;     // assumes 12MIPS, 57600baud
-#endif
-    
-    /* assign the UART1RX pin to a remappable input */
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    RPINR18bits.U1RXR = RX_RPNUM; /* U1RX assigned to RP25 */
-#endif
-    
-    /* make the RX pin an input */
-#if defined RX_PORT_A
-    TRISA |= (1 << RX_PIN);
-    ANSELA &= ~(1 << RX_PIN);
-#elif defined RX_PORT_B
-    TRISB |= (1 << RX_PIN);
-    ANSELB &= ~(1 << RX_PIN);
-#elif defined RX_PORT_C
-    TRISC |= (1 << RX_PIN);
-    ANSELC &= ~(1 << RX_PIN);
-#else 
-#error "RX_PORT_X not specified"
-#endif
-    
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    /* assign the UART1TX peripheral to a remappable output */
-    #if TX_RPNUM == 20
-        RPOR0bits.RP20R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 41
-        RPOR3bits.RP41R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 54
-        RPOR5bits.RP54R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 55
-        RPOR5bits.RP55R = U1TX_RPOR_NUM;
-    #else 
-    #error "TX_RPNUM not specified"
-    #endif 
-#endif
-    
-    /* make the TX pin an output */
-#if defined TX_PORT_A
-    TRISA &= ~(1 << TX_PIN);
-    ANSELA &= ~(1 << TX_PIN);
-#elif defined TX_PORT_B 
-    TRISB &= ~(1 << TX_PIN);
-    ANSELB &= ~(1 << TX_PIN);
-#elif defined TX_PORT_C 
-    TRISC &= ~(1 << TX_PIN);
-    ANSELC &= ~(1 << TX_PIN);
-#else 
-#error "TX_PORT_X not specified"
-#endif
-    
-    U1MODEbits.UARTEN = 1;  /* enable UART */
-    U1STAbits.UTXEN = 1;    /* transmit enabled */
-    
-    while(U1STAbits.URXDA) U1RXREG; /* clear anything in the buffer */
-}
-
-void initTimers(void){
-    /* initialize timer1 registers - timer 1 is used for determining if the 
-     * rx buffer should be flushed b/c of local stale data (mis-transfers, 
-     * etc) */
-    T1CON = 0x0030; /* prescaler = 256 (4.27us/tick) */
-    
-    /* initialize timer2 registers - timer 2 is used for determining if the
-     * the bootloader has been engaged recently */
-    TMR2 = 0;
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    T2CON = 0x8030; /* prescaler = 256 */
-#elif defined __PIC24FV16KM202__
-    /* on some devices, use the CCP1 module as a timer */
-    CCP1CON1H = 0x0000;
-    CCP1CON1L = 0x00c0; /* prescaler = 64 (4us/tick) */
-    CCP1CON1Lbits.CCPON = 1;
-#endif
-}
-
-bool readBootPin(void){
-#if defined(BOOT_PORT_A)
-    if(PORTA & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#elif defined(BOOT_PORT_B)
-    if(PORTB & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#elif defined(BOOT_PORT_C)
-    if(PORTC & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
 #else
 #error "boot port not specified"
 #endif
@@ -326,17 +213,13 @@ void processCommand(uint8_t* data){
             
             /* re-initialize the bootloader start address */
             if(address == 0){
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-            
-                address = 0x00000000;
-                progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
-                progData[1] = 0x000000;
-                doubleWordWrite(address, progData);
-#elif defined(__PIC24FV16KM202__)
                 address = 0x00000000;
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+                doubleWordWrite(address, progData);
+#elif defined(__PIC24FV16KM202__)
                 for(i=2; i<_FLASH_ROW; i++){
                     progData[i] = readAddress(i << 1);
                 }
@@ -485,6 +368,7 @@ void txEnd(void){
     U1TXREG = END_OF_FRAME;
 }
 
+/* todo: unify the array transmissions */
 void txArray8bit(uint8_t cmd, uint8_t* bytes, uint16_t len){
     uint16_t i;
     
