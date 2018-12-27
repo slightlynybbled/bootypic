@@ -7,18 +7,20 @@
  */
 #define VERSION_STRING "0.1"
 
-/* @brief this is the starting address of the application - must be 
- * on an even erase page boundary
- */
-#define APPLICATION_START_ADDRESS 0x1000
 
 /** @brief the microcontroller platform
  */
 #if defined(__dsPIC33EP32MC204__)
+/* @brief this is the starting address of the application - must be 
+ * on an even erase page boundary
+ */
+#define APPLICATION_START_ADDRESS 0x1000
 #define PLATFORM_STRING "dspic33ep32mc204"
 #elif defined(__dsPIC33EP64MC504__)
+#define APPLICATION_START_ADDRESS 0x1000
 #define PLATFORM_STRING "dspic33ep64mc504"
 #elif defined(__PIC24FV16KM202__)
+#define APPLICATION_START_ADDRESS 0x1000
 #define PLATFORM_STRING "pic24fv16km202"
 #elif defined(__PIC24FJ256GB106__)
 #define PLATFORM_STRING "pic24fj256gb106"
@@ -215,6 +217,6 @@ void writeInst32(uint32_t address, uint32_t* progDataArray);
  * @brief starts the application
  * @param applicationAddress
  */
-extern void startApp(uint32_t applicationAddress);
+extern void startApp(uint16_t applicationAddress);
 
 #endif

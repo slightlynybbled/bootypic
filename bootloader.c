@@ -46,7 +46,6 @@ static uint8_t f16_sum1 = 0, f16_sum2 = 0;
 static uint16_t t2Counter = 0;
 
 int main(void){
-	// run application-defined starting code here
 	pre_bootloader();
 
     /* initialize the peripherals */
@@ -64,7 +63,8 @@ int main(void){
             t2Counter++;
         }
     }
-    
+
+    txString(0xff,"Starting app");
     startApp(APPLICATION_START_ADDRESS);
     
     return 0;
@@ -96,9 +96,6 @@ void initOsc(void){
     CLKDIV = 0;
 #endif
 
-    /* Disable nested interrupts */
-    INTCON1bits.NSTDIS = 1;
-
     return;
 }
 
@@ -114,8 +111,7 @@ void initUart(void){
 		U1MODEbits.BRGH = 1;
 		U1BRG = FCY / (4.0f*UART_BAUD_RATE) - 1;
 	}   
-#endif
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+#elif defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     U1BRG = 31;
 	/* assign the UART1RX pin to a remappable input */
  	RPINR18bits.U1RXR = RX_RPNUM;
@@ -202,6 +198,7 @@ void initTimers(void){
 }
 
 void receiveBytes(void){
+	ClrWdt();
 	static const uint16_t TMR1_THRESHOLD = (uint16_t)(MESSAGE_TIME / 256.0f * FCY);
     while(U1STAbits.URXDA){
         rxBuffer[rxBufferIndex] = U1RXREG;
@@ -297,14 +294,14 @@ void processCommand(uint8_t* data){
     
     /* length is the length of the data block only, not including the command */
     uint8_t cmd = data[2];
-    uint16_t address;
+    uint32_t address;
     uint16_t word;
     uint32_t longWord;
-    uint32_t progData[MAX_PROG_SIZE + 1];
+    uint32_t progData[MAX_PROG_SIZE + 1] = {0};
     
     char strVersion[16] = VERSION_STRING;
     char strPlatform[20] = PLATFORM_STRING;
-    
+
     switch(cmd){
         case CMD_READ_PLATFORM:
             txString(cmd, strPlatform);
@@ -345,6 +342,7 @@ void processCommand(uint8_t* data){
             break;
             
         case CMD_ERASE_PAGE:
+	 		txString(0xff,"Erasing page");
             /* should correspond to a border */
             address = (uint32_t)data[3] 
                     + ((uint32_t)data[4] << 8)
@@ -355,18 +353,18 @@ void processCommand(uint8_t* data){
             if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
                 break;
             
-            eraseByAddress(address);
+			eraseByAddress(address);
             
             /* re-initialize the bootloader start address */
             if(address == 0){
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-            
-                address = 0x00000000;
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 doubleWordWrite(address, progData);
-#elif defined(__PIC24FV16KM202__)
-                address = 0x00000000;
+#elif defined(__PIC24FJ256GB106__)
+				writeWord(address, 0x040000 | BOOTLOADER_START_ADDRESS);
+				writeWord(address+2, 0x000000);
+#elif FLASH_ROW==32
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 
@@ -375,6 +373,8 @@ void processCommand(uint8_t* data){
                 }
                 
                 writeInst32(address, progData);
+#else
+	#error not implemented
 #endif
             }
             
@@ -430,8 +430,12 @@ void processCommand(uint8_t* data){
             
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
             doubleWordWrite(address, progData);
-#elif defined __PIC24FV16KM202__
+#elif defined(__PIC24FJ256GB106__)
+			writeRow(address, progData);
+#elif _FLASH_ROW==32
             writeInst32(address, progData);
+#else
+	#error not implemented
 #endif
             break;
             
@@ -458,8 +462,8 @@ void processCommand(uint8_t* data){
                 }
             }
             
-            /* program as a sequence of double-words */
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+			/* program as a sequence of double-words */
             for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
                 uint32_t addr = address + i;
                 
@@ -467,15 +471,23 @@ void processCommand(uint8_t* data){
                 if(addr >= __IVT_BASE)
                     doubleWordWrite(addr, &progData[i >> 1]);
             }
-#else 
+#elif defined (__PIC24FJ256GB106__)
+			word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
+			for (i=0; i < word; i++){
+				 writeRow(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]); 
+			}
+#elif _FLASH_ROW == 32
             word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
             for(i = 0; i < word; i++){
                 writeInst32(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]);
             }
+#else
+	#error not implemented
 #endif
             break;
             
         case CMD_START_APP:
+			txString(0xff,"starting app");
             startApp(APPLICATION_START_ADDRESS);
             break;
             

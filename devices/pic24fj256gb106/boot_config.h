@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define APPLICATION_START_ADDRESS 0x2000
 /**
  * @brief choose the RX and TX pins by RP function and port/pin
  * 
@@ -28,11 +29,11 @@
  * @brief this is an approximation of the time that the bootloader will remain
  * active at startup before moving on to the application
  */
-#define BOOT_LOADER_TIME (600.0f)
+#define BOOT_LOADER_TIME (15.0f)
 // Number of seconds between bytes before we time out and reset the buffer
-#define MESSAGE_TIME (0.05f)
+#define MESSAGE_TIME (0.2f)
 
-/* _FLASH_PAGE should be the maximum   page (in instructions) */
+/* _FLASH_PAGE should be the maximum page (in instructions) */
 #define _FLASH_PAGE   512
 /* _FLASH_ROW = maximum write row (in instructions) */
 #define _FLASH_ROW     64
@@ -60,5 +61,8 @@
 #define RX_RPNUM 6
 // remappable pin for UART output
 #define TX_RPNUM 7
+
+extern void writeWord(uint32_t address, uint32_t word);
+extern void writeRow(uint32_t address, uint32_t words[_FLASH_ROW]);
 
 #endif

@@ -7,6 +7,7 @@
 
 #define Cell_A_MOS _LATD3
 #define Cell_B_MOS _LATD2
+
 typedef enum BatteryState {
     CELL_OFF = 0,
     CELL_ON = 1,
@@ -16,8 +17,8 @@ typedef enum BatteryChannel {
     CELL_B = 1,
 } BatteryChannel;
 
-static void set_battery_state(BatteryChannel Channel, BatteryState state) {
-    switch (Channel) {
+static void set_battery_state(BatteryChannel channel, BatteryState state) {
+    switch (channel) {
     case CELL_A:
         Cell_A_MOS = state;
         break;

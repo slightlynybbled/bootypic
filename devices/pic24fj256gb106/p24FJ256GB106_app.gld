@@ -61,7 +61,7 @@ MEMORY
   ivt            : ORIGIN = 0x4,           LENGTH = 0xFC
   _reserved      : ORIGIN = 0x100,         LENGTH = 0x4
   aivt           : ORIGIN = 0x104,         LENGTH = 0xFC
-  program (xr)   : ORIGIN = 0x1000,        LENGTH = 0x299F8
+  program (xr)   : ORIGIN = 0x2000,        LENGTH = 0x28BFA
   CONFIG3        : ORIGIN = 0x2ABFA,       LENGTH = 0x2
   CONFIG2        : ORIGIN = 0x2ABFC,       LENGTH = 0x2
   CONFIG1        : ORIGIN = 0x2ABFE,       LENGTH = 0x2
@@ -70,8 +70,8 @@ MEMORY
 __CONFIG3 = 0x2ABFA;
 __CONFIG2 = 0x2ABFC;
 __CONFIG1 = 0x2ABFE;
-__CODE_BASE = 0x1000;
-__CODE_LENGTH = 0x299F8;
+__CODE_BASE = 0x2000;
+__CODE_LENGTH = 0x28BFA;
 __IVT_BASE  = 0x4;
 __AIVT_BASE = 0x104;
 
