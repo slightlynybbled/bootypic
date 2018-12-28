@@ -45,6 +45,7 @@ static uint16_t rxBufferIndex = 0;
 static uint8_t f16_sum1 = 0, f16_sum2 = 0;
 static uint16_t t2Counter = 0;
 
+
 int main(void){
 	pre_bootloader();
 
@@ -52,7 +53,7 @@ int main(void){
     initOsc();
     initUart();
     initTimers();
-
+	
     /* wait until something is received on the serial port */
     while(!should_abort_boot(t2Counter * TIME_PER_TMR2_50k)){
 		ClrWdt();
@@ -64,7 +65,6 @@ int main(void){
         }
     }
 
-    txString(0xff,"Starting app");
     startApp(APPLICATION_START_ADDRESS);
     
     return 0;
@@ -342,7 +342,6 @@ void processCommand(uint8_t* data){
             break;
             
         case CMD_ERASE_PAGE:
-	 		txString(0xff,"Erasing page");
             /* should correspond to a border */
             address = (uint32_t)data[3] 
                     + ((uint32_t)data[4] << 8)
@@ -487,7 +486,6 @@ void processCommand(uint8_t* data){
             break;
             
         case CMD_START_APP:
-			txString(0xff,"starting app");
             startApp(APPLICATION_START_ADDRESS);
             break;
             

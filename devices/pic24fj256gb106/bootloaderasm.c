@@ -2,12 +2,14 @@
 #include "boot_config.h"
 #include "xc.h"
 
-
 void eraseByAddress(uint32_t address){
+	uint16_t offset;
 	uint16_t tempTblPag = TBLPAG;
 	TBLPAG = (uint16_t)((address & 0x00ff0000) >> 16); // initialize PM Page Boundary
-	
+	offset = (uint16_t)((address & 0x0000ffff) >> 0);
 	NVMCON = 0x4042; // page erase operation
+	__builtin_tblwtl(offset, 0);
+	__builtin_disi(5);
 	__builtin_write_NVM();
 
 	TBLPAG = tempTblPag;
