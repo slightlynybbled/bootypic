@@ -1,0 +1,102 @@
+[HEADER]
+magic_cookie={66E99B07-E706-4689-9E80-9B2582898A13}
+file_version=1.0
+device=PIC24FJ256GB106
+[PATH_INFO]
+BuildDirPolicy=BuildDirIsProjectDir
+dir_src=
+dir_bin=bin
+dir_tmp=obj
+dir_sin=C:\Program Files (x86)\Microchip\xc16\v1.35\src\libm
+dir_inc=C:\Users\dan\Documents\OpenRoverFirmware-dan\bootypic\devices\pic24fj256gb106;C:\Users\dan\Documents\OpenRoverFirmware-dan\bootypic;C:\Program Files (x86)\Microchip\xc16\v1.35\include
+dir_lib=C:\Program Files (x86)\Microchip\xc16\v1.35\lib
+dir_lkr=
+[CAT_FILTERS]
+filter_src=*.s;*.c
+filter_inc=*.h;*.inc
+filter_obj=*.o
+filter_lib=*.a
+filter_lkr=*.gld
+[CAT_SUBFOLDERS]
+subfolder_src=
+subfolder_inc=P24FJ256GB106
+subfolder_obj=
+subfolder_lib=
+subfolder_lkr=
+[FILE_SUBFOLDERS]
+file_000=.
+file_001=.
+file_002=.
+file_003=.
+file_004=.
+file_005=P24FJ256GB106
+file_006=P24FJ256GB106
+file_007=P24FJ256GB106
+file_008=P24FJ256GB106
+file_009=.
+file_010=.
+file_011=.
+file_012=.
+file_013=.
+[GENERATED_FILES]
+file_000=no
+file_001=no
+file_002=no
+file_003=no
+file_004=no
+file_005=no
+file_006=no
+file_007=no
+file_008=no
+file_009=no
+file_010=no
+file_011=no
+file_012=no
+file_013=no
+[OTHER_FILES]
+file_000=no
+file_001=no
+file_002=no
+file_003=no
+file_004=no
+file_005=no
+file_006=no
+file_007=no
+file_008=no
+file_009=no
+file_010=no
+file_011=yes
+file_012=yes
+file_013=yes
+[FILE_INFO]
+file_000=bootloader.c
+file_001=bootloader.h
+file_002=..\..\..\..\..\program files (x86)\microchip\xc16\v1.35\support\generic\h\xc.h
+file_003=..\..\..\..\..\Program Files (x86)\Microchip\xc16\v1.35\include\stdbool.h
+file_004=..\..\..\..\..\Program Files (x86)\Microchip\xc16\v1.35\include\stdint.h
+file_005=C:\Program Files (x86)\Microchip\xc16\v1.35\support\PIC24F\h\p24FJ256GB106.h
+file_006=devices\pic24fj256gb106\config.h
+file_007=devices\pic24fj256gb106\boot_config.h
+file_008=devices\pic24fj256gb106\boot_impl.h
+file_009=boot_hooks.h
+file_010=devices\pic24fj256gb106\p24FJ256GB106_boot.gld
+file_011=license.txt
+file_012=readme.rst
+file_013=.gitignore
+[SUITE_INFO]
+suite_guid={9BCCB495-CD65-480A-BA76-63D8E78B117F}
+suite_state=-omf=elf
+[TOOL_SETTINGS]
+TS{8493B2ED-D539-4951-86C9-24D5331F0393}=-g
+TS{F9CE474D-6A6C-401D-A11E-BEE01B244D79}=-g -Wall -O1
+TS{21A8AA9B-E75C-40B6-B3AE-9CBC16FF2EF9}=--gc-sections -Map="$(BINDIR_)$(TARGETBASE).map" --report-mem --no-isr -o"$(BINDIR_)$(TARGETBASE).$(TARGETSUFFIX)"
+TS{45B3B6E0-6DAF-4E40-8D20-CFB1B620134D}=
+[INSTRUMENTED_TRACE]
+enable=0
+transport=0
+format=0
+[CUSTOM_BUILD]
+Pre-Build=
+Pre-BuildEnabled=1
+Post-Build=
+Post-BuildEnabled=1

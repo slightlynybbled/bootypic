@@ -1,2 +1,8 @@
 *.X/
 *.idea/
+
+obj/
+
+bin/
+
+*.mcs
