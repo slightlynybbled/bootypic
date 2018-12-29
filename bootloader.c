@@ -20,8 +20,11 @@
     #define TIME_PER_TMR2_50k 0.213
     #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
-    /*********************************************************/
-    #else 
+/*********************************************************/
+#elif defined(FCY)
+	// count * prescale / instruction clock
+	#define TIME_PER_TMR2_50k (50000.0f * 256.0f / FCY)
+#else
 #warning "processor may not be currently supported"
 #endif
 /*********************************************************/
@@ -36,8 +39,6 @@
 #define BOOTLOADER_START_ADDRESS 0x800
 #endif
 
-#define U1TX_RPOR_NUM 0b000001
-
 static uint8_t rxBuffer[RX_BUF_LEN];
 static uint16_t rxBufferIndex = 0;
 
@@ -45,37 +46,30 @@ static uint8_t f16_sum1 = 0, f16_sum2 = 0;
 static uint16_t t2Counter = 0;
 
 int main(void){
+	pre_bootloader();
+
     /* initialize the peripherals */
     initOsc();
-    initPins();
     initUart();
     initTimers();
-    
+	
     /* wait until something is received on the serial port */
-    while((t2Counter < NUM_OF_TMR2_OVERFLOWS) || (readBootPin() == false)){
+    while(!should_abort_boot(t2Counter * TIME_PER_TMR2_50k)){
+		ClrWdt();
         receiveBytes();
         processReceived();
-        
         if(TMR2 > 50000){
             TMR2 = 0;
             t2Counter++;
         }
     }
-    
+
     startApp(APPLICATION_START_ADDRESS);
     
     return 0;
 }
 
 void initOsc(void){
-    /*
-    Input Frequency: 7.370000e+00
-    Output Frequency: 120
-    Error in MHz: 3.277778e-02
-    N1: 9
-    M: 293
-    N2: 2
-    */
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     CLKDIVbits.PLLPRE = 7;
     PLLFBDbits.PLLDIV = 291;
@@ -89,52 +83,40 @@ void initOsc(void){
     /* Wait for PLL to lock */
     while (OSCCONbits.LOCK != 1);
     
-#elif defined __PIC24FV16KM202__
+#elif defined __PIC24F__
     CLKDIV = 0;
 #endif
 
-    /* Disable nested interrupts */
-    INTCON1bits.NSTDIS = 1;
-
     return;
-}
-
-void initPins(void){
-#if BOOT_PORT == PORT_A
-    ANSELA &= ~(1 << BOOT_PIN);
-    TRISA |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_B
-    ANSELB &= ~(1 << BOOT_PIN);
-    TRISB |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_C
-    ANSELC &= ~(1 << BOOT_PIN);
-    TRISC |= (1 << BOOT_PIN);
-#else
-#error "boot port not specified"
-#endif
 }
 
 void initUart(void){
     U1MODE = 0;
     U1STA = 0x2000;
 
-    /* Calculate the baud rate generator contents   */
-    /*           instFreq                           */
-    /*  BRG = --------------- - 1                   */
-    /*        (16 * baudRate)                       */
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+#if defined(UART_BAUD_RATE)
+	if (UART_BAUD_RATE < FCY/4.0f){
+		U1MODEbits.BRGH = 0; // High Baud Rate Select bit = off
+		U1BRG = FCY / (16.0f*UART_BAUD_RATE) - 1;
+	} 	else {
+		U1MODEbits.BRGH = 1;
+		U1BRG = FCY / (4.0f*UART_BAUD_RATE) - 1;
+	}   
+#elif defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     U1BRG = 31;
+	/* assign the UART1RX pin to a remappable input */
+ 	_U1RXR = RX_RPNUM;
+
+    /* assign the UART1TX peripheral to a remappable output */
+	TX_RPxR =_RPOUT_U1TX;
 #elif defined(__PIC24FV16KM202__)
     U1BRG = 12;     // assumes 12MIPS, 57600baud
 #endif
-    
-    /* assign the UART1RX pin to a remappable input */
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    RPINR18bits.U1RXR = RX_RPNUM; /* U1RX assigned to RP25 */
-#endif
-    
-    /* make the RX pin an input */
-#if defined RX_PORT_A
+	
+/* make the RX pin an input */
+#if defined(UART_MAP_RX)
+	UART_MAP_RX(RX_PIN);
+#elif defined RX_PORT_A
     TRISA |= (1 << RX_PIN);
     ANSELA &= ~(1 << RX_PIN);
 #elif defined RX_PORT_B
@@ -143,27 +125,12 @@ void initUart(void){
 #elif defined RX_PORT_C
     TRISC |= (1 << RX_PIN);
     ANSELC &= ~(1 << RX_PIN);
-#else 
-#error "RX_PORT_X not specified"
 #endif
-    
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    /* assign the UART1TX peripheral to a remappable output */
-    #if TX_RPNUM == 20
-        RPOR0bits.RP20R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 41
-        RPOR3bits.RP41R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 54
-        RPOR5bits.RP54R = U1TX_RPOR_NUM;
-    #elif TX_RPNUM == 55
-        RPOR5bits.RP55R = U1TX_RPOR_NUM;
-    #else 
-    #error "TX_RPNUM not specified"
-    #endif 
-#endif
-    
-    /* make the TX pin an output */
-#if defined TX_PORT_A
+   
+/* make the TX pin an output */
+#if defined UART_MAP_TX
+	UART_MAP_TX(TX_PIN);
+#elif defined TX_PORT_A
     TRISA &= ~(1 << TX_PIN);
     ANSELA &= ~(1 << TX_PIN);
 #elif defined TX_PORT_B 
@@ -172,8 +139,6 @@ void initUart(void){
 #elif defined TX_PORT_C 
     TRISC &= ~(1 << TX_PIN);
     ANSELC &= ~(1 << TX_PIN);
-#else 
-#error "TX_PORT_X not specified"
 #endif
     
     U1MODEbits.UARTEN = 1;  /* enable UART */
@@ -186,12 +151,12 @@ void initTimers(void){
     /* initialize timer1 registers - timer 1 is used for determining if the 
      * rx buffer should be flushed b/c of local stale data (mis-transfers, 
      * etc) */
-    T1CON = 0x0030; /* prescaler = 256 (4.27us/tick) */
+    T1CON = 0x0030; /* prescaler = 256 (each tick is 256.0 / FCY seconds) */
     
     /* initialize timer2 registers - timer 2 is used for determining if the
      * the bootloader has been engaged recently */
     TMR2 = 0;
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__) | defined(__PIC24FJ256GB106__)
     T2CON = 0x8030; /* prescaler = 256 */
 #elif defined __PIC24FV16KM202__
     /* on some devices, use the CCP1 module as a timer */
@@ -201,35 +166,12 @@ void initTimers(void){
 #endif
 }
 
-bool readBootPin(void){
-#if defined(BOOT_PORT_A)
-    if(PORTA & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#elif defined(BOOT_PORT_B)
-    if(PORTB & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#elif defined(BOOT_PORT_C)
-    if(PORTC & (1 << BOOT_PIN))
-        return true;
-    else
-        return false;
-    
-#else
-#error "boot port not specified"
-#endif
-}
-
 void receiveBytes(void){
+	static const uint16_t TMR1_THRESHOLD = (uint16_t)(MESSAGE_TIME / 256.0f * FCY);
     while(U1STAbits.URXDA){
         rxBuffer[rxBufferIndex] = U1RXREG;
         rxBufferIndex++;
-        
+
         TMR1 = TMR2 = 0;
         t2Counter = 0;
         T1CONbits.TON = 1;
@@ -237,7 +179,7 @@ void receiveBytes(void){
     
     /* if the time since the last received has expired, then
      * turn off the timer and reset the buffer */
-    if(TMR1 > 50000){
+    if(TMR1 > TMR1_THRESHOLD){
         uint16_t i;
         T1CONbits.TON = 0;
         TMR1 = 0;
@@ -320,14 +262,14 @@ void processCommand(uint8_t* data){
     
     /* length is the length of the data block only, not including the command */
     uint8_t cmd = data[2];
-    uint16_t address;
+    uint32_t address;
     uint16_t word;
     uint32_t longWord;
-    uint32_t progData[MAX_PROG_SIZE + 1];
+    uint32_t progData[MAX_PROG_SIZE + 1] = {0};
     
     char strVersion[16] = VERSION_STRING;
     char strPlatform[20] = PLATFORM_STRING;
-    
+
     switch(cmd){
         case CMD_READ_PLATFORM:
             txString(cmd, strPlatform);
@@ -378,18 +320,21 @@ void processCommand(uint8_t* data){
             if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
                 break;
             
-            eraseByAddress(address);
+			eraseByAddress(address);
             
             /* re-initialize the bootloader start address */
             if(address == 0){
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-            
-                address = 0x00000000;
+				// this processor can write 2 words at a time
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 doubleWordWrite(address, progData);
+#elif defined(__PIC24FJ256GB106__)
+				// this processor can write by the word
+				writeInstr(address, 0x040000 | BOOTLOADER_START_ADDRESS);
+				writeInstr(address+2, 0x000000);
 #elif defined(__PIC24FV16KM202__)
-                address = 0x00000000;
+				// This processor can only write by the row
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 
@@ -397,7 +342,9 @@ void processCommand(uint8_t* data){
                     progData[i] = readAddress(i << 1);
                 }
                 
-                writeInst32(address, progData);
+                writeRow(address, progData);
+#else
+	#error not implemented
 #endif
             }
             
@@ -453,8 +400,12 @@ void processCommand(uint8_t* data){
             
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
             doubleWordWrite(address, progData);
-#elif defined __PIC24FV16KM202__
+#elif defined(__PIC24FJ256GB106__)
+			writeRow(address, progData);
+#elif _FLASH_ROW==32
             writeInst32(address, progData);
+#else
+	#error not implemented
 #endif
             break;
             
@@ -481,8 +432,8 @@ void processCommand(uint8_t* data){
                 }
             }
             
-            /* program as a sequence of double-words */
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+			/* program as a sequence of double-words */
             for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
                 uint32_t addr = address + i;
                 
@@ -490,11 +441,13 @@ void processCommand(uint8_t* data){
                 if(addr >= __IVT_BASE)
                     doubleWordWrite(addr, &progData[i >> 1]);
             }
-#else 
-            word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
-            for(i = 0; i < word; i++){
-                writeInst32(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]);
-            }
+#elif (defined (__PIC24FJ256GB106__) || _FLASH_ROW == 32)
+			word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
+			for (i=0; i < word; i++){
+				 writeRow(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]); 
+			}
+#else
+	#error not implemented
 #endif
             break;
             
@@ -642,7 +595,8 @@ uint16_t fletcher16(uint8_t* data, uint16_t length){
 	return checksum;
 }
 
-void writeInst32(uint32_t address, uint32_t* progDataArray){
+#ifdef __PIC24FV16KM202__
+void writeRow(uint32_t address, uint32_t* progDataArray){
     uint16_t offset, i;
     uint16_t tempTblPag = TBLPAG;
     
@@ -664,3 +618,4 @@ void writeInst32(uint32_t address, uint32_t* progDataArray){
     
     TBLPAG = tempTblPag;
 }
+#endif
