@@ -36,7 +36,6 @@ files to be compatible with bootypic is described in the gld directory readme.
 
 - dsPIC33EP32MC204
 - dsPIC33EP64MC504
-- PIC24FV16KM202 (partial support, requires external oscillator at 24MHz)
 
 Contributions in this area are welcome!
 
