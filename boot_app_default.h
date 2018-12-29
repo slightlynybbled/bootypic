@@ -1,9 +1,7 @@
 #include "xc.h"
 #include "boot_config.h"
-#include "boot_hooks.h"
 
 // abort boot if boot pin is activated
-
 void pre_bootloader(){
 	#if BOOT_PORT == PORT_A
 	    ANSELA &= ~(1 << BOOT_PIN);

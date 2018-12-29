@@ -1,7 +1,77 @@
+/// Device-specific implementation details
+
 #include <stdint.h>
-#include "boot_config.h"
 #include "xc.h"
 
+#define PLATFORM_STRING "pic24fj256gb106"
+
+// instruction clock frequency, in Hz.
+#define FCY 16000000UL
+/* _FLASH_PAGE should be the maximum page (in instructions) */
+#define _FLASH_PAGE   512
+/* _FLASH_ROW = maximum write row (in instructions) */
+#define _FLASH_ROW    64
+
+#define UART_MAP_RX(rpn) uart_map_rx(rpn)
+void uart_map_rx(uint16_t rpn) {
+	// mark the pin as digital
+	if (rpn < 16) {
+		AD1PCFGL |= (1<<rpn);
+	} else if (rpn < 18) {
+		AD1PCFGH |= (1<<rpn);
+	}
+	// map that pin to UART RX
+	_U1RXR = rpn;
+}
+
+#define UART_MAP_TX(rpn) uart_map_tx(rpn)
+void uart_map_tx(uint16_t rpn) {
+	// mark the pin as digital
+	if (rpn < 16) {
+		AD1PCFGL |= (1<<rpn);
+	} else if (rpn < 18) {
+		AD1PCFGH |= (1<<rpn);
+	}
+	#define _RPxR(x) _RP ## x ## R
+	#define CASE(x) case x: _RPxR(x)=_RPOUT_U1TX; break;
+	switch (rpn){
+		CASE(0)
+		CASE(1)
+		CASE(2)
+		CASE(3)
+		CASE(4)
+		// no RP5R on this chip
+		CASE(6)
+		CASE(7)
+		CASE(8)
+		CASE(9)
+		CASE(10)
+		CASE(11)
+		CASE(12)
+		CASE(13)
+		CASE(14)
+		// no RP15R on this chip
+		CASE(16)
+		CASE(17)
+		CASE(18)
+		CASE(19)
+		CASE(20)
+		CASE(21)
+		CASE(22)
+		CASE(23)
+		CASE(24)
+		CASE(25)
+		CASE(26)
+		CASE(27)
+		CASE(28)
+		CASE(29)
+		CASE(30)
+	}
+	#undef CASE
+	#undef _RPxR
+}
+
+/// Device-specific implementations of bootloader operations
 void eraseByAddress(uint32_t address){
 	uint16_t offset;
 	uint16_t tempTblPag = TBLPAG;
@@ -30,7 +100,7 @@ uint32_t readAddress(uint32_t address){
 	return result;
 }
 
-void writeWord(uint32_t address, uint32_t word){
+void writeInstr(uint32_t address, uint32_t instruction){
 	uint16_t tempTblPag = TBLPAG; 
 
 	uint16_t offset = (uint16_t)(address & 0x0000ffff);
@@ -38,8 +108,8 @@ void writeWord(uint32_t address, uint32_t word){
 
 	NVMCON = 0x4003; // Memory word program operation
 	
-	__builtin_tblwtl(offset, (uint16_t)((word & 0x0000ffff) >> 0));
-	__builtin_tblwth(offset, (uint16_t)((word & 0x00ff0000) >> 16));
+	__builtin_tblwtl(offset, (uint16_t)((instruction & 0x0000ffff) >> 0));
+	__builtin_tblwth(offset, (uint16_t)((instruction & 0x00ff0000) >> 16));
 	__builtin_disi(5);
 	__builtin_write_NVM();
 
@@ -66,6 +136,5 @@ void writeRow(uint32_t address, uint32_t words[_FLASH_ROW]){
 }
 
 void startApp(uint16_t applicationAddress){
-	asm volatile ("goto w0");
-	//goto *(applicationAddress);
+	asm("goto w0");
 }

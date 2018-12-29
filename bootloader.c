@@ -20,7 +20,7 @@
     #define TIME_PER_TMR2_50k 0.213
     #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
-    /*********************************************************/
+/*********************************************************/
 #elif defined(FCY)
 	// count * prescale / instruction clock
 	#define TIME_PER_TMR2_50k (50000.0f * 256.0f / FCY)
@@ -44,7 +44,6 @@ static uint16_t rxBufferIndex = 0;
 
 static uint8_t f16_sum1 = 0, f16_sum2 = 0;
 static uint16_t t2Counter = 0;
-
 
 int main(void){
 	pre_bootloader();
@@ -71,14 +70,6 @@ int main(void){
 }
 
 void initOsc(void){
-    /*
-    Input Frequency: 7.370000e+00
-    Output Frequency: 120
-    Error in MHz: 3.277778e-02
-    N1: 9
-    M: 293
-    N2: 2
-    */
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     CLKDIVbits.PLLPRE = 7;
     PLLFBDbits.PLLDIV = 291;
@@ -92,7 +83,7 @@ void initOsc(void){
     /* Wait for PLL to lock */
     while (OSCCONbits.LOCK != 1);
     
-#elif defined __PIC24FV16KM202__
+#elif defined __PIC24F__
     CLKDIV = 0;
 #endif
 
@@ -114,7 +105,7 @@ void initUart(void){
 #elif defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
     U1BRG = 31;
 	/* assign the UART1RX pin to a remappable input */
- 	RPINR18bits.U1RXR = RX_RPNUM;
+ 	_U1RXR = RX_RPNUM;
 
     /* assign the UART1TX peripheral to a remappable output */
 	TX_RPxR =_RPOUT_U1TX;
@@ -122,34 +113,10 @@ void initUart(void){
     U1BRG = 12;     // assumes 12MIPS, 57600baud
 #endif
 	
-#if defined(RX_RPNUM)
-	// mark the receive pin as digital
-	#if RX_RPNUM < 16
-		AD1PCFG |= (1 << RX_RPNUM);
-	#else
-		AD1PCFGH |= (1 << RX_RPNUM-16))
-	#endif
-	// map that pin to UART RX
-	_U1RXR = RX_RPNUM;
-
-	// mark the transmit pin as digital
-	#if TX_RPNUM < 16
-		AD1PCFG |= (1 << TX_RPNUM);
-	#else
-		AD1PCFGH |= (1 << (TX_RPNUM-16))
-	#endif
-// map that pin to UART TX
-#define RPxR2(x) _RP ## x ## R
-// Additional layer of indirection for token pasting (##) to work as expected
-#define RPxR(x) RPxR2(x)
-	RPxR(TX_RPNUM) = _RPOUT_U1TX;
-#undef RPxR2
-#undef RPxR
-#endif
-	
-
 /* make the RX pin an input */
-#if defined RX_PORT_A
+#if defined(UART_MAP_RX)
+	UART_MAP_RX(RX_PIN);
+#elif defined RX_PORT_A
     TRISA |= (1 << RX_PIN);
     ANSELA &= ~(1 << RX_PIN);
 #elif defined RX_PORT_B
@@ -161,7 +128,9 @@ void initUart(void){
 #endif
    
 /* make the TX pin an output */
-#if defined TX_PORT_A
+#if defined UART_MAP_TX
+	UART_MAP_TX(TX_PIN);
+#elif defined TX_PORT_A
     TRISA &= ~(1 << TX_PIN);
     ANSELA &= ~(1 << TX_PIN);
 #elif defined TX_PORT_B 
@@ -198,7 +167,6 @@ void initTimers(void){
 }
 
 void receiveBytes(void){
-	ClrWdt();
 	static const uint16_t TMR1_THRESHOLD = (uint16_t)(MESSAGE_TIME / 256.0f * FCY);
     while(U1STAbits.URXDA){
         rxBuffer[rxBufferIndex] = U1RXREG;
@@ -357,13 +325,16 @@ void processCommand(uint8_t* data){
             /* re-initialize the bootloader start address */
             if(address == 0){
 #if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
+				// this processor can write 2 words at a time
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 doubleWordWrite(address, progData);
 #elif defined(__PIC24FJ256GB106__)
-				writeWord(address, 0x040000 | BOOTLOADER_START_ADDRESS);
-				writeWord(address+2, 0x000000);
-#elif FLASH_ROW==32
+				// this processor can write by the word
+				writeInstr(address, 0x040000 | BOOTLOADER_START_ADDRESS);
+				writeInstr(address+2, 0x000000);
+#elif defined(__PIC24FV16KM202__)
+				// This processor can only write by the row
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
                 
@@ -371,7 +342,7 @@ void processCommand(uint8_t* data){
                     progData[i] = readAddress(i << 1);
                 }
                 
-                writeInst32(address, progData);
+                writeRow(address, progData);
 #else
 	#error not implemented
 #endif
@@ -470,16 +441,11 @@ void processCommand(uint8_t* data){
                 if(addr >= __IVT_BASE)
                     doubleWordWrite(addr, &progData[i >> 1]);
             }
-#elif defined (__PIC24FJ256GB106__)
+#elif (defined (__PIC24FJ256GB106__) || _FLASH_ROW == 32)
 			word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
 			for (i=0; i < word; i++){
 				 writeRow(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]); 
 			}
-#elif _FLASH_ROW == 32
-            word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
-            for(i = 0; i < word; i++){
-                writeInst32(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]);
-            }
 #else
 	#error not implemented
 #endif
@@ -629,7 +595,8 @@ uint16_t fletcher16(uint8_t* data, uint16_t length){
 	return checksum;
 }
 
-void writeInst32(uint32_t address, uint32_t* progDataArray){
+#ifdef __PIC24FV16KM202__
+void writeRow(uint32_t address, uint32_t* progDataArray){
     uint16_t offset, i;
     uint16_t tempTblPag = TBLPAG;
     
@@ -651,3 +618,4 @@ void writeInst32(uint32_t address, uint32_t* progDataArray){
     
     TBLPAG = tempTblPag;
 }
+#endif

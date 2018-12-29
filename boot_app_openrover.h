@@ -1,6 +1,7 @@
+/// Application-specific implementation details
+
 #include "xc.h"
 #include "boot_config.h"
-#include "boot_hooks.h"
 
 void pre_bootloader(){
 }
