@@ -161,42 +161,6 @@ uint16_t fletcher16Accum(uint8_t byte);
 uint16_t fletcher16(uint8_t* data, uint16_t length);
 
 /**
- * @brief reads the value at the address
- * @param address
- * @return the value of the address
- */
-extern uint32_t readAddress(uint32_t address);
-
-/**
- * @brief erases the flash page starting at the address
- * @param address
- */
-extern void eraseByAddress(uint32_t address);
-
-/**
- * @brief writes one instruction, at the address
- * @param address the address of the instruction (must be even)
- * @param progDataArray the instruction to write
- * words to be written to flash
- */
-extern void writeInstr(uint32_t address, uint32_t instruction);
-
-/**
- * @brief writes two instructions, starting at the address
- * @param address the starting address (must be even)
- * @param progDataArray a 32-bit, 2-element array containing the instruction 
- * words to be written to flash
- */
-extern void doubleWordWrite(uint32_t address, uint32_t* progDataArray);
-
-/**
- * @brief writes an entire row of instructions, starting at the address
- * @param address the starting address (must start a flash row)
- * @param words a buffer containing the instructions to write
- */
-extern void writeRow(uint32_t address, uint32_t words[_FLASH_ROW]);
-
-/**
  * @brief starts the application
  * @param applicationAddress
  */

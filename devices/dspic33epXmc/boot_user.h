@@ -44,7 +44,8 @@
  * @brief this is an approximation of the time that the bootloader will remain
  * active at startup before moving on to the application
  */
-#define BOOT_LOADER_TIME (0.5)
+#define BOOT_LOADER_TIME (10.0f)
+#define STALE_MESSAGE_TIME (0.05f)
 
 /* @brief this is the maximum size that can be programmed into the microcontroller
  * as part of one transaction using the CMD_WRITE_MAX_PROG_SIZE command 
@@ -55,7 +56,7 @@
 #define MAX_PROG_SIZE 0x80
 #define APPLICATION_START_ADDRESS 0x1000
 #define TIME_PER_TMR2_50k 0.213
-#define FCY 16000000UL  /* instruction clock frequency, in Hz */
+#define FCY 60000000UL  /* instruction clock frequency, in Hz */
 
 #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 

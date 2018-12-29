@@ -33,13 +33,13 @@ void initOsc(void){
 }
 
 void initPins(void){
-#if BOOT_PORT == PORT_A
+#if defined(BOOT_PORT_A)
     ANSELA &= ~(1 << BOOT_PIN);
     TRISA |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_B
+#elif defined(BOOT_PORT_B)
     ANSELB &= ~(1 << BOOT_PIN);
     TRISB |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_C
+#elif defined(BOOT_PORT_C)
     ANSELC &= ~(1 << BOOT_PIN);
     TRISC |= (1 << BOOT_PIN);
 #else

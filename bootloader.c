@@ -44,7 +44,8 @@ int main(void){
 }
 
 void receiveBytes(void){
-	static const uint16_t TMR1_THRESHOLD = (uint16_t)(BOOT_LOADER_TIME / 256.0f * FCY);
+    static const uint16_t TMR1_THRESHOLD = (uint16_t)(STALE_MESSAGE_TIME * (FCY / (256.0f)));
+    
     while(U1STAbits.URXDA){
         rxBuffer[rxBufferIndex] = U1RXREG;
         rxBufferIndex++;

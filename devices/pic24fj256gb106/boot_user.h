@@ -5,6 +5,15 @@
 #include <stdint.h>
 
 /**
+ * @brief these defines will determine the boot pin to be utilized
+ * 
+ * When the boot pin is pulled low, then bootloader will start, otherwise
+ * the application will start on reset.
+ */
+#define BOOT_PORT_B
+#define BOOT_PIN 0
+
+/**
  * @brief choose the RX and TX pins by RP function and port/pin
  * 
  * Each pin should have three defines associated with it:
@@ -37,9 +46,8 @@
  * @brief this is an approximation of the time that the bootloader will remain
  * active at startup before moving on to the application
  */
-#define BOOT_LOADER_TIME (15.0f)
-// Number of seconds between bytes before we time out and reset the buffer
-#define MESSAGE_TIME (0.2f)
+#define BOOT_LOADER_TIME (10.0f)
+#define STALE_MESSAGE_TIME (0.05f)
 
 
 /* @brief this is the maximum size that can be programmed into the microcontroller
@@ -52,6 +60,17 @@
 #define APPLICATION_START_ADDRESS 0x1000
 #define TIME_PER_TMR2_50k 0.213
 #define FCY 16000000UL  /* instruction clock frequency, in Hz */
+
+#define _FLASH_PAGE   512  /* _FLASH_PAGE should be the maximum page (in instructions) */
+#define _FLASH_ROW    64  /* _FLASH_ROW = maximum write row (in instructions) */
+
+#define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
+
+#if defined(__PIC24FJ256GB106__)
+#define PLATFORM_STRING "pic24fj256gb106"
+#else 
+#warning "your device may not be supported"
+#endif
 
 /**
  * @brief initializes the oscillator
@@ -113,7 +132,7 @@ void doubleWordWrite(uint32_t address, uint32_t* progDataArray);
  * @param address the starting address (must start a flash row)
  * @param words a buffer containing the instructions to write
  */
-void writeRow(uint32_t address, uint32_t words[_FLASH_ROW]);
+void writeRow(uint32_t address, uint32_t* words);
 
 /**
  * @brief writes the maximum number of instructions

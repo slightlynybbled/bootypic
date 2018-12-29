@@ -1,58 +1,35 @@
 /// Device-specific implementation details
-
-#include <stdint.h>
 #include "xc.h"
-
-#define PLATFORM_STRING "pic24fj256gb106"
-
-// instruction clock frequency, in Hz.
-#define FCY 16000000UL
-/* _FLASH_PAGE should be the maximum page (in instructions) */
-#define _FLASH_PAGE   512
-/* _FLASH_ROW = maximum write row (in instructions) */
-#define _FLASH_ROW    64
+#include "boot_user.h"
 
 bool readBootPin(void);
 
 void initOsc(void){
-    /*
-    Input Frequency: 7.370000e+00
-    Output Frequency: 120
-    Error in MHz: 3.277778e-02
-    N1: 9
-    M: 293
-    N2: 2
-    */
-    CLKDIVbits.PLLPRE = 7;
-    PLLFBDbits.PLLDIV = 291;
-    CLKDIVbits.PLLPOST = 0x0;
-
-    /* Clock switch to incorporate PLL */
-    OSCCONbits.NOSC = 1; /* Request new oscillator to be PRI with PLL */
-    OSCCONbits.OSWEN = 1; /* Initiate switch */
-    while (OSCCONbits.COSC != 1); /* Wait for Clock switch to occur */
-
-    /* Wait for PLL to lock */
-    while (OSCCONbits.LOCK != 1);
-    
-    /* Disable nested interrupts */
-    INTCON1bits.NSTDIS = 1;
+    CLKDIV = 0;
 
     return;
 }
 
 void initPins(void){
-#if BOOT_PORT == PORT_A
-    ANSELA &= ~(1 << BOOT_PIN);
-    TRISA |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_B
-    ANSELB &= ~(1 << BOOT_PIN);
+    /* no analog, all digital */
+    AD1PCFGL = 0xffff;
+    AD1PCFGH = 0x3;
+    
+#if defined(BOOT_PORT_B)
     TRISB |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_C
-    ANSELC &= ~(1 << BOOT_PIN);
+#elif defined(BOOT_PORT_C)
     TRISC |= (1 << BOOT_PIN);
+#elif defined(BOOT_PORT_D)
+    TRISD |= (1 << BOOT_PIN);
+#elif defined(BOOT_PORT_E)
+    TRISE |= (1 << BOOT_PIN);
+#elif defined(BOOT_PORT_F)
+    TRISF |= (1 << BOOT_PIN);
+#elif defined(BOOT_PORT_G)
+    TRISG |= (1 << BOOT_PIN);
 #else
-#error "boot port not specified"
+#error "boot port not specified or invalid"
+#endif
 }
 
 #define UART_MAP_RX(rpn) uart_map_rx(rpn)
@@ -239,7 +216,7 @@ void writeInstr(uint32_t address, uint32_t instruction){
 	TBLPAG = tempTblPag;
 }
 
-void writeRow(uint32_t address, uint32_t words[_FLASH_ROW]){
+void writeRow(uint32_t address, uint32_t* words){
 
 	// see "Row Programming in C with Built-in Functions (Unmapped Latches)"
 	uint16_t i;
