@@ -34,24 +34,12 @@ void initPins(void){
 
 #define UART_MAP_RX(rpn) uart_map_rx(rpn)
 void uart_map_rx(uint16_t rpn) {
-	// mark the pin as digital
-	if (rpn < 16) {
-		AD1PCFGL |= (1<<rpn);
-	} else if (rpn < 18) {
-		AD1PCFGH |= (1<<rpn);
-	}
 	// map that pin to UART RX
 	_U1RXR = rpn;
 }
 
 #define UART_MAP_TX(rpn) uart_map_tx(rpn)
 void uart_map_tx(uint16_t rpn) {
-	// mark the pin as digital
-	if (rpn < 16) {
-		AD1PCFGL |= (1<<rpn);
-	} else if (rpn < 18) {
-		AD1PCFGH |= (1<<rpn);
-	}
 	#define _RPxR(x) _RP ## x ## R
 	#define CASE(x) case x: _RPxR(x)=_RPOUT_U1TX; break;
 	switch (rpn){
