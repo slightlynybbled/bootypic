@@ -5,15 +5,6 @@
 #include <stdint.h>
 
 /**
- * @brief these defines will determine the boot pin to be utilized
- * 
- * When the boot pin is pulled low, then bootloader will start, otherwise
- * the application will start on reset.
- */
-#define BOOT_PORT_A
-#define BOOT_PIN 9
-
-/**
  * @brief choose the RX and TX pins by RP function and port/pin
  * 
  * Each pin should have three defines associated with it:
@@ -32,19 +23,24 @@
  * what the user should do in the source code to make compatible with their
  * application.
  */
-#define RX_PORT_B
-#define RX_PIN 7
-#define RX_RPNUM 39
 
-#define TX_PORT_A
-#define TX_PIN 4
-#define TX_RPNUM 20
+
+// UART communication baud rate, in Hz
+#define UART_BAUD_RATE 57600
+
+// remappable pin for UART input
+#define RX_PIN 6
+// remappable pin for UART output
+#define TX_PIN 7
 
 /**
  * @brief this is an approximation of the time that the bootloader will remain
  * active at startup before moving on to the application
  */
-#define BOOT_LOADER_TIME (0.5)
+#define BOOT_LOADER_TIME (15.0f)
+// Number of seconds between bytes before we time out and reset the buffer
+#define MESSAGE_TIME (0.2f)
+
 
 /* @brief this is the maximum size that can be programmed into the microcontroller
  * as part of one transaction using the CMD_WRITE_MAX_PROG_SIZE command 
@@ -56,16 +52,6 @@
 #define APPLICATION_START_ADDRESS 0x1000
 #define TIME_PER_TMR2_50k 0.213
 #define FCY 16000000UL  /* instruction clock frequency, in Hz */
-
-#define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
-
-#if defined(__dsPIC33EP32MC204__)
-#define PLATFORM_STRING "dspic33ep32mc204"
-#elif defined(__dsPIC33EP64MC504__)
-#define PLATFORM_STRING "dspic33ep64mc504"
-#else 
-#warning "your device may not be supported"
-#endif
 
 /**
  * @brief initializes the oscillator

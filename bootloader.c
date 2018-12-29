@@ -19,14 +19,16 @@ static uint8_t f16_sum1 = 0, f16_sum2 = 0;
 static uint16_t t2Counter = 0;
 
 int main(void){
-    /* initialize the peripherals */
+    /* initialize the peripherals from the user-supplied initialization functions */
+	initPins();
     initOsc();
-    initPins();
     initUart();
     initTimers();
-    
+	
     /* wait until something is received on the serial port */
-    while((t2Counter < NUM_OF_TMR2_OVERFLOWS) || (readBootPin() == false)){
+    while(!should_abort_boot(t2Counter)){
+		ClrWdt();
+        
         receiveBytes();
         processReceived();
         
@@ -35,32 +37,18 @@ int main(void){
             t2Counter++;
         }
     }
-    
+
     startApp(APPLICATION_START_ADDRESS);
     
     return 0;
 }
 
-void initPins(void){
-#if BOOT_PORT == PORT_A
-    ANSELA &= ~(1 << BOOT_PIN);
-    TRISA |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_B
-    ANSELB &= ~(1 << BOOT_PIN);
-    TRISB |= (1 << BOOT_PIN);
-#elif BOOT_PORT == PORT_C
-    ANSELC &= ~(1 << BOOT_PIN);
-    TRISC |= (1 << BOOT_PIN);
-#else
-#error "boot port not specified"
-#endif
-}
-
 void receiveBytes(void){
+	static const uint16_t TMR1_THRESHOLD = (uint16_t)(BOOT_LOADER_TIME / 256.0f * FCY);
     while(U1STAbits.URXDA){
         rxBuffer[rxBufferIndex] = U1RXREG;
         rxBufferIndex++;
-        
+
         TMR1 = TMR2 = 0;
         t2Counter = 0;
         T1CONbits.TON = 1;
@@ -68,7 +56,7 @@ void receiveBytes(void){
     
     /* if the time since the last received has expired, then
      * turn off the timer and reset the buffer */
-    if(TMR1 > 50000){
+    if(TMR1 > TMR1_THRESHOLD){
         uint16_t i;
         T1CONbits.TON = 0;
         TMR1 = 0;
@@ -151,14 +139,14 @@ void processCommand(uint8_t* data){
     
     /* length is the length of the data block only, not including the command */
     uint8_t cmd = data[2];
-    uint16_t address;
+    uint32_t address;
     uint16_t word;
     uint32_t longWord;
-    uint32_t progData[MAX_PROG_SIZE + 1];
+    uint32_t progData[MAX_PROG_SIZE + 1] = {0};
     
     char strVersion[16] = VERSION_STRING;
     char strPlatform[20] = PLATFORM_STRING;
-    
+
     switch(cmd){
         case CMD_READ_PLATFORM:
             txString(cmd, strPlatform);
@@ -209,7 +197,7 @@ void processCommand(uint8_t* data){
             if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
                 break;
             
-            eraseByAddress(address);
+			eraseByAddress(address);
             
             /* re-initialize the bootloader start address */
             if(address == 0){
@@ -273,8 +261,7 @@ void processCommand(uint8_t* data){
             if(word < __IVT_BASE)
                 break;
 
-            doubleWordWrite(address, progData);
-
+			writeRow(address, progData);
             break;
             
         case CMD_WRITE_MAX_PROG_SIZE:
@@ -299,15 +286,7 @@ void processCommand(uint8_t* data){
                     }
                 }
             }
-            
-            /* program as a sequence of double-words */
-            for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
-                uint32_t addr = address + i;
-                
-                /* do not allow application to overwrite the reset vector */
-                if(addr >= __IVT_BASE)
-                    doubleWordWrite(addr, &progData[i >> 1]);
-            }
+            writeRow(address, progData);
 
             break;
             
@@ -420,27 +399,4 @@ uint16_t fletcher16(uint8_t* data, uint16_t length){
     checksum = (sum2 << 8) | sum1;
     
 	return checksum;
-}
-
-void writeInst32(uint32_t address, uint32_t* progDataArray){
-    uint16_t offset, i;
-    uint16_t tempTblPag = TBLPAG;
-    
-    /* set up NVMCON for row programming */
-    NVMCON = 0x4004; /* Initialize NVMCON to write 1 row */
-    
-    /* Set up pointer to the first memory location to be written */
-    TBLPAG = (uint16_t)((address & 0x00ff0000) >> 16); /* initialize PM Page Boundary */
-    offset = (uint16_t)(address & 0x0000ffff);  /* initialize lower word of address */
-    
-    /* perform TBLWT instructions to write necessary number of latches */
-    for(i=0; i < 32; i++){
-        __builtin_tblwtl(offset, (uint16_t)(progDataArray[i] & 0x0000ffff));            /* Write to address low word */
-        __builtin_tblwth(offset, (uint16_t)((progDataArray[i] & 0xffff0000) >> 16));    /* Write to upper byte */
-        offset += 2; /* Increment add */
-    }
-    
-    __builtin_write_NVM();
-    
-    TBLPAG = tempTblPag;
 }

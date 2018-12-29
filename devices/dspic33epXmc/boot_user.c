@@ -3,6 +3,8 @@
 
 #define U1TX_RPOR_NUM 1
 
+bool readBootPin(void);
+
 void initOsc(void){
     /*
     Input Frequency: 7.370000e+00
@@ -28,6 +30,21 @@ void initOsc(void){
     INTCON1bits.NSTDIS = 1;
 
     return;
+}
+
+void initPins(void){
+#if BOOT_PORT == PORT_A
+    ANSELA &= ~(1 << BOOT_PIN);
+    TRISA |= (1 << BOOT_PIN);
+#elif BOOT_PORT == PORT_B
+    ANSELB &= ~(1 << BOOT_PIN);
+    TRISB |= (1 << BOOT_PIN);
+#elif BOOT_PORT == PORT_C
+    ANSELC &= ~(1 << BOOT_PIN);
+    TRISC |= (1 << BOOT_PIN);
+#else
+#error "boot port not specified"
+#endif
 }
 
 void initUart(void){
@@ -123,4 +140,41 @@ bool readBootPin(void){
 #else
 #error "boot port not specified"
 #endif
+}
+
+bool should_abort_boot(uint16_t counterValue) {
+	if(counterValue > NUM_OF_TMR2_OVERFLOWS){
+		return true;
+	}
+
+    #if defined(BOOT_PORT_A)
+        if(PORTA & (1 << BOOT_PIN))
+            return true;
+    #elif defined(BOOT_PORT_B)
+        if(PORTB & (1 << BOOT_PIN))
+            return true;
+    #elif defined(BOOT_PORT_C)
+        if(PORTC & (1 << BOOT_PIN))
+            return true;
+    #else
+    #error "boot port not specified"
+    #endif
+
+   return false;
+}
+
+void writeRow(uint32_t address, uint32_t words[_FLASH_ROW]){
+    doubleWordWrite(address, words);
+}
+
+void writeMax(uint32_t address, uint32_t* progData){
+    uint32_t i;
+    
+    for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
+        uint32_t addr = address + i;
+        
+        /* do not allow application to overwrite the reset vector */
+        if(addr >= __IVT_BASE)
+            writeRow(addr, &progData[i >> 1]);
+    }
 }

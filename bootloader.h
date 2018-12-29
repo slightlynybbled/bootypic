@@ -6,21 +6,6 @@
  */
 #define VERSION_STRING "0.1"
 
-/* @brief this is the starting address of the application - must be 
- * on an even erase page boundary
- */
-#define APPLICATION_START_ADDRESS 0x1000
-
-/** @brief the microcontroller platform
- */
-#if defined(__dsPIC33EP32MC204__)
-#define PLATFORM_STRING "dspic33ep32mc204"
-#elif defined(__dsPIC33EP64MC504__)
-#define PLATFORM_STRING "dspic33ep64mc504"
-#elif defined(__PIC24FV16KM202__)
-#define PLATFORM_STRING "pic24fv16km202"
-#endif
-
 #define TX_BUF_LEN  ((MAX_PROG_SIZE * 4) + 0x10)
 #define RX_BUF_LEN  ((MAX_PROG_SIZE * 4) + 0x10)
 
@@ -74,31 +59,12 @@ typedef enum{
     CMD_START_APP   = 0x40
 }CommCommand;
 
-/**
- * @brief initializes the oscillator
- */
-void initOsc(void);
+
 
 /**
  * @brief initializes the pins
  */
 void initPins(void);
-
-/**
- * @brief initializes the UART
- */
-void initUart(void);
-
-/**
- * @brief initializes TMR1 and TMR2
- */
-void initTimers(void);
-
-/**
- * @brief reads the boot pin state
- * @return true if the pin is high, else false
- */
-bool readBootPin(void);
 
 /**
  * @brief receives data from the UART
@@ -208,6 +174,14 @@ extern uint32_t readAddress(uint32_t address);
 extern void eraseByAddress(uint32_t address);
 
 /**
+ * @brief writes one instruction, at the address
+ * @param address the address of the instruction (must be even)
+ * @param progDataArray the instruction to write
+ * words to be written to flash
+ */
+extern void writeInstr(uint32_t address, uint32_t instruction);
+
+/**
  * @brief writes two instructions, starting at the address
  * @param address the starting address (must be even)
  * @param progDataArray a 32-bit, 2-element array containing the instruction 
@@ -215,12 +189,17 @@ extern void eraseByAddress(uint32_t address);
  */
 extern void doubleWordWrite(uint32_t address, uint32_t* progDataArray);
 
-void writeInst32(uint32_t address, uint32_t* progDataArray);
+/**
+ * @brief writes an entire row of instructions, starting at the address
+ * @param address the starting address (must start a flash row)
+ * @param words a buffer containing the instructions to write
+ */
+extern void writeRow(uint32_t address, uint32_t words[_FLASH_ROW]);
 
 /**
  * @brief starts the application
  * @param applicationAddress
  */
-extern void startApp(uint32_t applicationAddress);
+void startApp(uint16_t applicationAddress);
 
 #endif

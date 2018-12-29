@@ -36,6 +36,7 @@ files to be compatible with bootypic is described in the gld directory readme.
 
 - dsPIC33EP32MC204
 - dsPIC33EP64MC504
+- PIC24FJ256GB106
 
 Contributions in this area are welcome!
 
