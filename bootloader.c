@@ -2,33 +2,6 @@
 #include "config.h" 
 #include "bootloader.h"
 
-/*********************************************************/
-#if defined(__dsPIC33EP32MC204__) | (__dsPIC33EP64MC504__)
-    #define TIME_PER_TMR2_50k 0.213
-    #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
-
-/*********************************************************/
-#elif defined __PIC24FV16KM202__
-    /* _FLASH_PAGE should be the maximum erase page (in instructions) */
-    #define _FLASH_PAGE 128
-    #define _FLASH_ROW 32
-
-    #define ANSELA ANSA
-    #define ANSELB ANSB
-    #define TMR2 CCP1TMRL
-
-    #define TIME_PER_TMR2_50k 0.213
-    #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
-
-/*********************************************************/
-#elif defined(FCY)
-	// count * prescale / instruction clock
-	#define TIME_PER_TMR2_50k (50000.0f * 256.0f / FCY)
-#else
-#warning "processor may not be currently supported"
-#endif
-/*********************************************************/
-
 /* bootloader starting address (cannot write to addresses between
  * BOOTLOADER_START_ADDRESS and APPLICATION_START_ADDRESS) */
 #if _FLASH_PAGE == 128
@@ -46,18 +19,19 @@ static uint8_t f16_sum1 = 0, f16_sum2 = 0;
 static uint16_t t2Counter = 0;
 
 int main(void){
-	pre_bootloader();
-
-    /* initialize the peripherals */
+    /* initialize the peripherals from the user-supplied initialization functions */
+	initPins();
     initOsc();
     initUart();
     initTimers();
 	
     /* wait until something is received on the serial port */
-    while(!should_abort_boot(t2Counter * TIME_PER_TMR2_50k)){
+    while(!should_abort_boot(t2Counter)){
 		ClrWdt();
+        
         receiveBytes();
         processReceived();
+        
         if(TMR2 > 50000){
             TMR2 = 0;
             t2Counter++;
@@ -69,105 +43,9 @@ int main(void){
     return 0;
 }
 
-void initOsc(void){
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    CLKDIVbits.PLLPRE = 7;
-    PLLFBDbits.PLLDIV = 291;
-    CLKDIVbits.PLLPOST = 0x0;
-
-    /* Clock switch to incorporate PLL */
-    OSCCONbits.NOSC = 1; /* Request new oscillator to be PRI with PLL */
-    OSCCONbits.OSWEN = 1; /* Initiate switch */
-    while (OSCCONbits.COSC != 1); /* Wait for Clock switch to occur */
-
-    /* Wait for PLL to lock */
-    while (OSCCONbits.LOCK != 1);
-    
-#elif defined __PIC24F__
-    CLKDIV = 0;
-#endif
-
-    return;
-}
-
-void initUart(void){
-    U1MODE = 0;
-    U1STA = 0x2000;
-
-#if defined(UART_BAUD_RATE)
-	if (UART_BAUD_RATE < FCY/4.0f){
-		U1MODEbits.BRGH = 0; // High Baud Rate Select bit = off
-		U1BRG = FCY / (16.0f*UART_BAUD_RATE) - 1;
-	} 	else {
-		U1MODEbits.BRGH = 1;
-		U1BRG = FCY / (4.0f*UART_BAUD_RATE) - 1;
-	}   
-#elif defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-    U1BRG = 31;
-	/* assign the UART1RX pin to a remappable input */
- 	_U1RXR = RX_RPNUM;
-
-    /* assign the UART1TX peripheral to a remappable output */
-	TX_RPxR =_RPOUT_U1TX;
-#elif defined(__PIC24FV16KM202__)
-    U1BRG = 12;     // assumes 12MIPS, 57600baud
-#endif
-	
-/* make the RX pin an input */
-#if defined(UART_MAP_RX)
-	UART_MAP_RX(RX_PIN);
-#elif defined RX_PORT_A
-    TRISA |= (1 << RX_PIN);
-    ANSELA &= ~(1 << RX_PIN);
-#elif defined RX_PORT_B
-    TRISB |= (1 << RX_PIN);
-    ANSELB &= ~(1 << RX_PIN);
-#elif defined RX_PORT_C
-    TRISC |= (1 << RX_PIN);
-    ANSELC &= ~(1 << RX_PIN);
-#endif
-   
-/* make the TX pin an output */
-#if defined UART_MAP_TX
-	UART_MAP_TX(TX_PIN);
-#elif defined TX_PORT_A
-    TRISA &= ~(1 << TX_PIN);
-    ANSELA &= ~(1 << TX_PIN);
-#elif defined TX_PORT_B 
-    TRISB &= ~(1 << TX_PIN);
-    ANSELB &= ~(1 << TX_PIN);
-#elif defined TX_PORT_C 
-    TRISC &= ~(1 << TX_PIN);
-    ANSELC &= ~(1 << TX_PIN);
-#endif
-    
-    U1MODEbits.UARTEN = 1;  /* enable UART */
-    U1STAbits.UTXEN = 1;    /* transmit enabled */
-    
-    while(U1STAbits.URXDA) U1RXREG; /* clear anything in the buffer */
-}
-
-void initTimers(void){
-    /* initialize timer1 registers - timer 1 is used for determining if the 
-     * rx buffer should be flushed b/c of local stale data (mis-transfers, 
-     * etc) */
-    T1CON = 0x0030; /* prescaler = 256 (each tick is 256.0 / FCY seconds) */
-    
-    /* initialize timer2 registers - timer 2 is used for determining if the
-     * the bootloader has been engaged recently */
-    TMR2 = 0;
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__) | defined(__PIC24FJ256GB106__)
-    T2CON = 0x8030; /* prescaler = 256 */
-#elif defined __PIC24FV16KM202__
-    /* on some devices, use the CCP1 module as a timer */
-    CCP1CON1H = 0x0000;
-    CCP1CON1L = 0x00c0; /* prescaler = 64 (4us/tick) */
-    CCP1CON1Lbits.CCPON = 1;
-#endif
-}
-
 void receiveBytes(void){
-	static const uint16_t TMR1_THRESHOLD = (uint16_t)(MESSAGE_TIME / 256.0f * FCY);
+    static const uint16_t TMR1_THRESHOLD = (uint16_t)(STALE_MESSAGE_TIME * (FCY / (256.0f)));
+    
     while(U1STAbits.URXDA){
         rxBuffer[rxBufferIndex] = U1RXREG;
         rxBufferIndex++;
@@ -324,28 +202,14 @@ void processCommand(uint8_t* data){
             
             /* re-initialize the bootloader start address */
             if(address == 0){
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-				// this processor can write 2 words at a time
+                address = 0x00000000;
+                
+                /* this is the GOTO BOOTLOADER instruction */
                 progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
                 progData[1] = 0x000000;
+                
+                /* write the data */
                 doubleWordWrite(address, progData);
-#elif defined(__PIC24FJ256GB106__)
-				// this processor can write by the word
-				writeInstr(address, 0x040000 | BOOTLOADER_START_ADDRESS);
-				writeInstr(address+2, 0x000000);
-#elif defined(__PIC24FV16KM202__)
-				// This processor can only write by the row
-                progData[0] = 0x040000 + BOOTLOADER_START_ADDRESS;
-                progData[1] = 0x000000;
-                
-                for(i=2; i<_FLASH_ROW; i++){
-                    progData[i] = readAddress(i << 1);
-                }
-                
-                writeRow(address, progData);
-#else
-	#error not implemented
-#endif
             }
             
             break;
@@ -397,16 +261,8 @@ void processCommand(uint8_t* data){
             /* do not allow the reset vector to be changed by the application */
             if(word < __IVT_BASE)
                 break;
-            
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-            doubleWordWrite(address, progData);
-#elif defined(__PIC24FJ256GB106__)
+
 			writeRow(address, progData);
-#elif _FLASH_ROW==32
-            writeInst32(address, progData);
-#else
-	#error not implemented
-#endif
             break;
             
         case CMD_WRITE_MAX_PROG_SIZE:
@@ -431,24 +287,8 @@ void processCommand(uint8_t* data){
                     }
                 }
             }
-            
-#if defined(__dsPIC33EP32MC204__) | defined(__dsPIC33EP64MC504__)
-			/* program as a sequence of double-words */
-            for(i = 0; i < (MAX_PROG_SIZE << 1); i += 4){
-                uint32_t addr = address + i;
-                
-                /* do not allow application to overwrite the reset vector */
-                if(addr >= __IVT_BASE)
-                    doubleWordWrite(addr, &progData[i >> 1]);
-            }
-#elif (defined (__PIC24FJ256GB106__) || _FLASH_ROW == 32)
-			word = (uint16_t)(MAX_PROG_SIZE/_FLASH_ROW);
-			for (i=0; i < word; i++){
-				 writeRow(address + ((i * _FLASH_ROW) << 1), &progData[i*_FLASH_ROW]); 
-			}
-#else
-	#error not implemented
-#endif
+            writeRow(address, progData);
+
             break;
             
         case CMD_START_APP:
@@ -494,14 +334,12 @@ void txEnd(void){
     U1TXREG = END_OF_FRAME;
 }
 
-void txArray8bit(uint8_t cmd, uint8_t* bytes, uint16_t len){
+void txBytes(uint8_t cmd, uint8_t* bytes, uint16_t len){
     uint16_t i;
     
     txStart();
-    
     txByte((uint8_t)(len & 0x00ff));
     txByte((uint8_t)((len & 0xff00) >> 8));
-    
     txByte(cmd);
     
     for(i=0; i<len; i++){
@@ -512,44 +350,13 @@ void txArray8bit(uint8_t cmd, uint8_t* bytes, uint16_t len){
 }
 
 void txArray16bit(uint8_t cmd, uint16_t* words, uint16_t len){
-    uint16_t i;
     uint16_t length = len << 1;
-    
-    txStart();
-    
-    txByte((uint8_t)(length & 0x00ff));
-    txByte((uint8_t)((length & 0xff00) >> 8));
-    
-    txByte(cmd);
-    
-    for(i=0; i<len; i++){
-        txByte((uint8_t)(words[i] & 0x00ff));
-        txByte((uint8_t)((words[i] & 0xff00) >> 8));
-    }
-    
-    txEnd();
+    txBytes(cmd, (uint8_t*) words, length);
 }
 
 void txArray32bit(uint8_t cmd, uint32_t* words, uint16_t len){
-    uint16_t i;
     uint16_t length = len << 2;
-    
-    txStart();
-    
-    txByte((uint8_t)(length & 0x00ff));
-    txByte((uint8_t)((length & 0xff00) >> 8));
-    
-    txByte(cmd);
-    
-    for(i=0; i<len; i++){
-        uint32_t word = words[i];
-        txByte((uint8_t)(word & 0x000000ff));
-        txByte((uint8_t)((word & 0x0000ff00) >> 8));
-        txByte((uint8_t)((word & 0x00ff0000) >> 16));
-        txByte((uint8_t)((word & 0xff000000) >> 24));
-    }
-    
-    txEnd();
+    txBytes(cmd, (uint8_t*) words, length);
 }
 
 void txString(uint8_t cmd, char* str){
@@ -594,28 +401,3 @@ uint16_t fletcher16(uint8_t* data, uint16_t length){
     
 	return checksum;
 }
-
-#ifdef __PIC24FV16KM202__
-void writeRow(uint32_t address, uint32_t* progDataArray){
-    uint16_t offset, i;
-    uint16_t tempTblPag = TBLPAG;
-    
-    /* set up NVMCON for row programming */
-    NVMCON = 0x4004; /* Initialize NVMCON to write 1 row */
-    
-    /* Set up pointer to the first memory location to be written */
-    TBLPAG = (uint16_t)((address & 0x00ff0000) >> 16); /* initialize PM Page Boundary */
-    offset = (uint16_t)(address & 0x0000ffff);  /* initialize lower word of address */
-    
-    /* perform TBLWT instructions to write necessary number of latches */
-    for(i=0; i < 32; i++){
-        __builtin_tblwtl(offset, (uint16_t)(progDataArray[i] & 0x0000ffff));            /* Write to address low word */
-        __builtin_tblwth(offset, (uint16_t)((progDataArray[i] & 0xffff0000) >> 16));    /* Write to upper byte */
-        offset += 2; /* Increment add */
-    }
-    
-    __builtin_write_NVM();
-    
-    TBLPAG = tempTblPag;
-}
-#endif

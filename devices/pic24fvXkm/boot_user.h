@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "xc.h"
 
 /**
  * @brief these defines will determine the boot pin to be utilized
@@ -55,5 +56,16 @@
 /* @brief this is the starting address of the application - must be 
  * on an even erase page boundary
  */
+
+/* _FLASH_PAGE should be the maximum erase page (in instructions) */
+#define _FLASH_PAGE 128
+#define _FLASH_ROW 32
+
+#define ANSELA ANSA
+#define ANSELB ANSB
+#define TMR2 CCP1TMRL
+
+#define TIME_PER_TMR2_50k 0.213
+#define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
 #endif
