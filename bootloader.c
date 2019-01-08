@@ -255,11 +255,11 @@ void processCommand(uint8_t* data){
             }
             
             /* do not allow the bootloader to be overwritten */
-            if((word >= BOOTLOADER_START_ADDRESS) && (word < APPLICATION_START_ADDRESS))
+            if((address >= BOOTLOADER_START_ADDRESS) && (address < APPLICATION_START_ADDRESS))
                 break;
             
             /* do not allow the reset vector to be changed by the application */
-            if(word < __IVT_BASE)
+            if(address < __IVT_BASE)
                 break;
 
 			writeRow(address, progData);

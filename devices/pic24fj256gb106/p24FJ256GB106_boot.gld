@@ -60,7 +60,7 @@ MEMORY
   ivt            : ORIGIN = 0x4,           LENGTH = 0xFC
   _reserved      : ORIGIN = 0x100,         LENGTH = 0x4
   aivt           : ORIGIN = 0x104,         LENGTH = 0xFC
-  program (xr)   : ORIGIN = 0x400,         LENGTH = 0xC00 /* reduced to ensure that the bootloader doesn't encroach on application space */
+  program (xr)   : ORIGIN = 0x400,         LENGTH = 0x1600 /* reduced to ensure that the bootloader doesn't encroach on application space */
   CONFIG3        : ORIGIN = 0x2ABFA,       LENGTH = 0x2
   CONFIG2        : ORIGIN = 0x2ABFC,       LENGTH = 0x2
   CONFIG1        : ORIGIN = 0x2ABFE,       LENGTH = 0x2
