@@ -17,30 +17,23 @@
 #define BOOTLOADER_START_ADDRESS 0x800
 #endif
 
-static uint8_t rxBuffer[RX_BUF_LEN];
-static uint16_t rxBufferIndex = 0;
-
+static uint8_t message[RX_BUF_LEN] = {0};
 static uint8_t f16_sum1 = 0, f16_sum2 = 0;
-static uint16_t t2Counter = 0;
 
-int main(void){
-    /* initialize the peripherals from the user-supplied initialization functions */
+int main(void) {
+	/* handle power outage */
+	onStartup();
+	/* initialize the peripherals from the user-supplied initialization functions */
 	initPins();
     initOsc();
     initUart();
     initTimers();
 	
     /* wait until something is received on the serial port */
-    while(!should_abort_boot(t2Counter)){
+    while(!should_abort_boot()){
 		ClrWdt();
         
         receiveBytes();
-        processReceived();
-        
-        if(TMR2 > 50000){
-            TMR2 = 0;
-            t2Counter++;
-        }
     }
 
     startApp(APPLICATION_START_ADDRESS);
@@ -48,96 +41,70 @@ int main(void){
     return 0;
 }
 
+typedef enum ParseState {
+	STATE_WAIT_FOR_START, ///< Have not yet received a start byte.
+	STATE_READ_ESCAPED,   ///< Have received an escape byte, next data byte must be decoded
+	STATE_READ_VERBATIM,  ///< Have not received an escape byte, next data byte should be read as-is
+	STATE_END_OF_MESSAGE, 
+} ParseState;
+
 void receiveBytes(void){
-    static const uint16_t TMR1_THRESHOLD = (uint16_t)(STALE_MESSAGE_TIME * (FCY / (256.0f)));
-    
-    while(U1STAbits.URXDA){
-        rxBuffer[rxBufferIndex] = U1RXREG;
-        rxBufferIndex++;
+	static uint16_t messageIndex = 0;
+	static ParseState state = STATE_WAIT_FOR_START;
+	// keep reading until one of the following:
+	// 1. we don't have any data available in the uart buffer to read in which case we return
+	//    and wait for this function to be called again
+	// 2. we find an END OF MESSAGE, in which case we call processCommand to deal with the data
+	// 3. we overflow the receive buffer, in which case we throw out the data
+    while(true)
+	{
+		uint8_t a_byte;
 
-        TMR1 = TMR2 = 0;
-        t2Counter = 0;
-        T1CONbits.TON = 1;
-    }
-    
-    /* if the time since the last received has expired, then
-     * turn off the timer and reset the buffer */
-    if(TMR1 > TMR1_THRESHOLD){
-        uint16_t i;
-        T1CONbits.TON = 0;
-        TMR1 = 0;
-        
-        rxBufferIndex = 0;
-        for(i=0; i<RX_BUF_LEN; i++)   rxBuffer[i] = 0;
-    }
-}
-
-void processReceived(void){
-    /* look for start and end bytes in the sequence */
-    bool startFound = false, endFound = false;
-    uint16_t indexOfStart = 0, indexOfEnd = 0;
-    uint16_t index = 0, messageIndex = 0, i;
-    uint8_t message[RX_BUF_LEN];
-    uint16_t fletcher;
-    
-    /* find the start of frame */
-    while((index < RX_BUF_LEN) && (index < rxBufferIndex)){
-        if(rxBuffer[index] == START_OF_FRAME){
-            startFound = true;
-            indexOfStart = index;
-        }
-        index++;
-        
-        if(startFound) break;
-    }
-    
-    /* find the end of frame */
-    while((index < RX_BUF_LEN) && (index < rxBufferIndex)){
-        if(rxBuffer[index] == END_OF_FRAME){
-            endFound = true;
-            indexOfEnd = index;
-        }
-        index++;
-        
-        if(endFound) break;
-    }
-    
-    if(startFound && endFound){
-        bool escapeNext = false;
-        index = indexOfStart;
-        messageIndex = 0;
-        
-        /* read the message out, removing escape characters as necessary */
-        for(index=indexOfStart+1; index<indexOfEnd; index++){
-            if(!escapeNext){
-                if(rxBuffer[index] == ESC){
-                    escapeNext = true;
-                }else{
-                    message[messageIndex] = rxBuffer[index];
-                    messageIndex++;
-                }
-            }else{
-                message[messageIndex] = rxBuffer[index] ^ ESC_XOR;
-                messageIndex++;
-                escapeNext = false;
-            }
-        }
-        
-        /* read the fletcher number from the message */
-        fletcher = (uint16_t)message[messageIndex - 2] 
-                + ((uint16_t)message[messageIndex - 1] << 8);
-        
-        /* if they match, then process the message */
-        if(fletcher == fletcher16(message, messageIndex - 2)){
-            processCommand(message);
-        }
-        
-        /* stop the timer, clear the buffer */
-        T1CONbits.TON = 0;
-        TMR1 = 0;
-        rxBufferIndex = 0;
-        for(i=0; i<RX_BUF_LEN; i++)   rxBuffer[i] = 0;
-    }
+		if (!tryRxByte(&a_byte))
+			return;
+			
+		switch (state){
+		case STATE_WAIT_FOR_START:
+			if (a_byte == START_OF_FRAME){
+				state = STATE_READ_VERBATIM;
+			}
+			// otherwise, ignore data until we see a start byte
+			break;
+		case STATE_READ_VERBATIM:
+			if (a_byte == ESC){
+				state = STATE_READ_ESCAPED;
+			} else if (a_byte == END_OF_FRAME) {
+				state = STATE_END_OF_MESSAGE;
+			} else {
+				message[messageIndex++] = a_byte;
+			}
+			break;
+		case STATE_READ_ESCAPED:
+			message[messageIndex++] = a_byte ^ ESC_XOR;
+			state = STATE_READ_VERBATIM;
+			break;
+		default:
+			break;
+		}
+		
+		if (state == STATE_END_OF_MESSAGE) {
+			uint16_t fletcher = (uint16_t)message[messageIndex - 2] 
+	                + ((uint16_t)message[messageIndex - 1] << 8);
+	        if(fletcher == fletcher16(message, messageIndex - 2)){
+	            processCommand(message);
+	            // we got a valid message! reset the stall timer
+				TMR3HLD = 0;
+				TMR2 = 0;
+	        }
+		}
+	    if (messageIndex >= RX_BUF_LEN || state == STATE_END_OF_MESSAGE) {
+			uint16_t i;
+		    for(i=0; i<RX_BUF_LEN; i++) message[i] = 0;
+		    messageIndex = 0;
+		    state = STATE_WAIT_FOR_START;
+		    return;
+		}
+	}
 }
 
 void processCommand(uint8_t* data){
@@ -239,7 +206,7 @@ void processCommand(uint8_t* data){
             progData[0] = address;
             
             for(i=0; i<MAX_PROG_SIZE; i++){
-                progData[i+1] = readAddress((address + (i << 1)));
+                progData[i+1] = readAddress(address + 2*i);
             }
             
             txArray32bit(cmd, progData, MAX_PROG_SIZE + 1);
@@ -247,13 +214,13 @@ void processCommand(uint8_t* data){
             break;
             
         case CMD_WRITE_ROW:
-            address = (uint32_t)data[3] 
+            address = ((uint32_t)data[3] << 0) 
                     + ((uint32_t)data[4] << 8)
                     + ((uint32_t)data[5] << 16)
                     + ((uint32_t)data[6] << 24);
             
             for(i=0; i<_FLASH_ROW; i++){
-                progData[i] = (uint32_t)data[i * 4 + 7] 
+                progData[i] = ((uint32_t)data[i * 4 + 7] << 0) 
                     + ((uint32_t)data[i * 4 + 8] << 8)
                     + ((uint32_t)data[i * 4 + 9] << 16)
                     + ((uint32_t)data[i * 4 + 10] << 24);
