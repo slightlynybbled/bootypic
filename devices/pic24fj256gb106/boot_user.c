@@ -89,35 +89,10 @@ void initUart(void){
 	} 	else {
 		U1MODEbits.BRGH = 1;
 		U1BRG = FCY / (4.0f*UART_BAUD_RATE) - 1;
-	}   
-	
-/* make the RX pin an input */
-#if defined(UART_MAP_RX)
-	UART_MAP_RX(RX_PIN);
-#elif defined RX_PORT_A
-    TRISA |= (1 << RX_PIN);
-    ANSELA &= ~(1 << RX_PIN);
-#elif defined RX_PORT_B
-    TRISB |= (1 << RX_PIN);
-    ANSELB &= ~(1 << RX_PIN);
-#elif defined RX_PORT_C
-    TRISC |= (1 << RX_PIN);
-    ANSELC &= ~(1 << RX_PIN);
-#endif
-   
-/* make the TX pin an output */
-#if defined UART_MAP_TX
-	UART_MAP_TX(TX_PIN);
-#elif defined TX_PORT_A
-    TRISA &= ~(1 << TX_PIN);
-    ANSELA &= ~(1 << TX_PIN);
-#elif defined TX_PORT_B 
-    TRISB &= ~(1 << TX_PIN);
-    ANSELB &= ~(1 << TX_PIN);
-#elif defined TX_PORT_C 
-    TRISC &= ~(1 << TX_PIN);
-    ANSELC &= ~(1 << TX_PIN);
-#endif
+	}
+
+	/* note UART module overrides the PORT, LAT, and TRIS bits, so no
+     * need to set them */
     
     U1MODEbits.UARTEN = 1;  /* enable UART */
     U1STAbits.UTXEN = 1;    /* transmit enabled */
