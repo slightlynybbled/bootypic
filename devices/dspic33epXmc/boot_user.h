@@ -1,5 +1,5 @@
-#ifndef _BOOTLOADER_H
-#define _BOOTLOADER_H
+#ifndef _BOOT_USER_H
+#define _BOOT_USER_H
 
 #include <stdbool.h>
 #include <stdint.h>

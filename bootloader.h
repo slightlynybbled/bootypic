@@ -1,5 +1,5 @@
-#ifndef _BOOTY_H
-#define _BOOTY_H
+#ifndef _BOOTLOADER_H
+#define _BOOTLOADER_H
 #include "boot_user.h"
 
 /** @brief the version of the transmission protocol

@@ -1,7 +1,7 @@
 /* PIC24FJ256GB106 Configuration Bit Settings */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef _CONFIG_H
+#define _CONFIG_H
 
 #pragma config JTAGEN = OFF
 #pragma config GCP = OFF
