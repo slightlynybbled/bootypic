@@ -2,6 +2,11 @@
 #include "config.h" 
 #include "bootloader.h"
 
+
+#if MAX_PROG_SIZE % _FLASH_ROW != 0
+#error "MAX_PROG_SIZE must be a multiple of _FLASH_ROW"
+#endif
+
 /* bootloader starting address (cannot write to addresses between
  * BOOTLOADER_START_ADDRESS and APPLICATION_START_ADDRESS) */
 #if _FLASH_PAGE == 128
@@ -270,25 +275,27 @@ void processCommand(uint8_t* data){
                     + ((uint32_t)data[4] << 8)
                     + ((uint32_t)data[5] << 16)
                     + ((uint32_t)data[6] << 24);
-            
+           		 
             /* fill the progData array */
             for(i=0; i<MAX_PROG_SIZE; i++){
-                progData[i] = (uint32_t)data[7 + (i * 4)]
+            	progData[i] = (uint32_t)data[7 + (i * 4)]
                         + ((uint32_t)data[8 + (i * 4)] << 8)
                         + ((uint32_t)data[9 + (i * 4)] << 16)
                         + ((uint32_t)data[10 + (i * 4)] << 24);
-                
-                /* the zero address should always go to the bootloader */
-                if(address == 0){
-                    if(i == 0){
-                        progData[i] = 0x040000 | BOOTLOADER_START_ADDRESS;
-                    }else if(i == 1){
-                        progData[i] = 0x000000;
-                    }
-                }
-            }
-            writeRow(address, progData);
+                 /* the zero address should always go to the bootloader */
+	             if(address == 0){
+	                   if(i == 0){
+	                       progData[i] = 0x040000 | BOOTLOADER_START_ADDRESS;
+	                   }else if(i == 1){
+	                       progData[i] = 0x000000;
+	                   }
+	             }
+			}
 
+			/* write to flash memory, one row at a time */
+			for (i=0; i*_FLASH_ROW<MAX_PROG_SIZE; i++){
+				 writeRow(address + i * _FLASH_ROW * 2, progData + i*_FLASH_ROW);
+			}
             break;
             
         case CMD_START_APP:
@@ -296,7 +303,7 @@ void processCommand(uint8_t* data){
             break;
             
         default:
-        {}
+        	break;
     }
 }
 

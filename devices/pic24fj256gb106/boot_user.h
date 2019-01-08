@@ -4,6 +4,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifndef __PIC24FJ256GB106__
+#error "platform settings do not match header file"
+#endif
+#define PLATFORM_STRING "pic24fj256gb106"
+
 /**
  * @brief these defines will determine the boot pin to be utilized
  * 
@@ -57,7 +62,7 @@
  * allow faster programming operations, but will consume more RAM.
  */
 #define MAX_PROG_SIZE 0x80
-#define APPLICATION_START_ADDRESS 0x1000
+#define APPLICATION_START_ADDRESS 0x2000
 #define TIME_PER_TMR2_50k 0.213
 #define FCY 16000000UL  /* instruction clock frequency, in Hz */
 
@@ -65,13 +70,6 @@
 #define _FLASH_ROW    64  /* _FLASH_ROW = maximum write row (in instructions) */
 
 #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
-
-#if defined(__PIC24FJ256GB106__)
-#define PLATFORM_STRING "pic24fj256gb106"
-#else 
-#warning "your device may not be supported"
-#endif
-
 /**
  * @brief initializes the oscillator
  */
@@ -122,7 +120,7 @@ void writeInstr(uint32_t address, uint32_t instruction);
 /**
  * @brief writes two instructions, starting at the address
  * @param address the starting address (must be even)
- * @param progDataArray a 32-bit, 2-element array containing the instruction 
+ * @param progDataArray a 32-bit, 2-element array containing the instructions
  * words to be written to flash
  */
 void doubleWordWrite(uint32_t address, uint32_t* progDataArray);
@@ -130,14 +128,14 @@ void doubleWordWrite(uint32_t address, uint32_t* progDataArray);
 /**
  * @brief writes an entire row of instructions, starting at the address
  * @param address the starting address (must start a flash row)
- * @param words a buffer containing the instructions to write
+ * @param words a buffer containing the _FLASH_ROW instructions to write
  */
 void writeRow(uint32_t address, uint32_t* words);
 
 /**
  * @brief writes the maximum number of instructions
  * @param address the starting address
- * @param progData a 32-bit, 2-element array containing the instruction words
+ * @param progData a 32-bit, MAX_PROG_SIZE-element array containing the instruction words
  * to be written to flash
  */
 void writeMax(uint32_t address, uint32_t* progData);
