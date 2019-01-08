@@ -88,6 +88,13 @@ void processCommand(uint8_t* data);
  */
 void txStart(void);
 
+
+/**
+ * @brief receive a single UART byte, assigning it to outbyte
+ * @return true if successful
+ */
+extern bool tryRxByte(uint8_t *outbyte);
+
 /**
  * @brief transmits a single byte, escaping if necessary, along with 
  * accumulating the fletcher checksum
@@ -165,5 +172,31 @@ uint16_t fletcher16(uint8_t* data, uint16_t length);
  * @param applicationAddress
  */
 void startApp(uint16_t applicationAddress);
+
+/**
+ * @brief handles device startup. May check the reset reason
+ *        RCON and do any necesseray recovery
+ */
+extern void onStartup(void);
+
+/**
+ * @brief initializes the oscillator
+ */
+extern void initOsc(void);
+
+/**
+ * @brief initializes the pins
+ */
+extern void initPins(void);
+
+/**
+ * @brief initializes the UART
+ */
+extern void initUart(void);
+
+/**
+ * @brief initializes timers for bootloader timeout
+ */
+extern void initTimers(void);
 
 #endif

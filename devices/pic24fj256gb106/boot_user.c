@@ -2,20 +2,35 @@
 #include "xc.h"
 #include "boot_user.h"
 
-bool readBootPin(void);
-
 void initOsc(void){
     CLKDIV = 0;
-
     return;
 }
+
+#ifdef BOOT_PORT_NONE
+bool SHOULD_SKIP_BOOTLOADER __attribute__((persistent, address(0x400)));
+#endif
+
+void onStartup(void){
+	#if defined(BOOT_PORT_NONE)
+	if (RCONbits.POR // reset due to power outage
+		|| RCONbits.IOPUWR // reset due to bad opcode
+		){
+		// If we didn't reset cleanly, this persistent variable will contain garbage data
+		// or the firmware may be corrupt. Should run the bootloader.
+		SHOULD_SKIP_BOOTLOADER = false;	
+	}
+	#endif
+	RCON = 0;
+}	
 
 void initPins(void){
     /* no analog, all digital */
     AD1PCFGL = 0xffff;
     AD1PCFGH = 0x3;
-    
-#if defined(BOOT_PORT_B)
+
+#if defined(BOOT_PORT_NONE)
+#elif defined(BOOT_PORT_B)
     TRISB |= (1 << BOOT_PIN);
 #elif defined(BOOT_PORT_C)
     TRISC |= (1 << BOOT_PIN);
@@ -32,13 +47,11 @@ void initPins(void){
 #endif
 }
 
-#define UART_MAP_RX(rpn) uart_map_rx(rpn)
 void uart_map_rx(uint16_t rpn) {
 	// map that pin to UART RX
 	_U1RXR = rpn;
 }
 
-#define UART_MAP_TX(rpn) uart_map_tx(rpn)
 void uart_map_tx(uint16_t rpn) {
 	#define _RPxR(x) _RP ## x ## R
 	#define CASE(x) case x: _RPxR(x)=_RPOUT_U1TX; break;
@@ -82,13 +95,15 @@ void uart_map_tx(uint16_t rpn) {
 void initUart(void){
     U1MODE = 0;
     U1STA = 0x2000;
+    uart_map_rx(RX_PIN);
+    uart_map_tx(TX_PIN);
 
 	if (UART_BAUD_RATE < FCY/4.0f){
 		U1MODEbits.BRGH = 0; // High Baud Rate Select bit = off
-		U1BRG = FCY / (16.0f*UART_BAUD_RATE) - 1;
+		U1BRG = FCY / 16 / UART_BAUD_RATE - 1;
 	} 	else {
 		U1MODEbits.BRGH = 1;
-		U1BRG = FCY / (4.0f*UART_BAUD_RATE) - 1;
+		U1BRG = FCY / 4 / UART_BAUD_RATE - 1;
 	}
 
 	/* note UART module overrides the PORT, LAT, and TRIS bits, so no
@@ -101,24 +116,32 @@ void initUart(void){
 }
 
 void initTimers(void){
-    /* initialize timer1 registers - timer 1 is used for determining if the 
-     * rx buffer should be flushed b/c of local stale data (mis-transfers, 
-     * etc) */
-    T1CON = 0x0030; /* prescaler = 256 (4.27us/tick) */
-    
-    /* initialize timer2 registers - timer 2 is used for determining if the
-     * the bootloader has been engaged recently */
-    TMR2 = 0;
-
-    T2CON = 0x8030; /* prescaler = 256 */
+	T2CON = T3CON = 0;
+	TMR2 = TMR3 = 0;
+	PR2 = PR3 = 0xffff;
+	
+	T2CONbits.T32 = 1; // merge timer 2 and timer 3 into a 32 bit timer
+	T2CONbits.TCKPS = 0b11; // 256 prescale
+	T2CONbits.TON = 1;
 }
 
-bool should_abort_boot(uint16_t counterValue) {
-	if(counterValue > NUM_OF_TMR2_OVERFLOWS){
-		return true;
-	}
+uint32_t getTimeTicks(){
+	uint32_t n_ticks = 0;
+	n_ticks |= (uint32_t)TMR2;
+	n_ticks |= ((uint32_t)TMR3HLD)<<16;
+	return n_ticks;
+}
 
-    #if defined(BOOT_PORT_A)
+bool should_abort_boot() {
+	static const uint32_t BOOTLOADER_TIMEOUT_TICKS = (FCY / 256.0 * BOOT_LOADER_TIME);
+	if(getTimeTicks() > BOOTLOADER_TIMEOUT_TICKS){
+       return true;
+    }
+
+	#if defined(BOOT_PORT_NONE)
+		if (SHOULD_SKIP_BOOTLOADER)
+			return true;
+    #elif defined(BOOT_PORT_A)
         if(PORTA & (1 << BOOT_PIN))
             return true;
     #elif defined(BOOT_PORT_B)
@@ -132,6 +155,16 @@ bool should_abort_boot(uint16_t counterValue) {
     #endif
 
    return false;
+}
+
+bool tryRxByte(uint8_t *outbyte){
+	if (U1STAbits.URXDA){
+		*outbyte = U1RXREG;
+		return true;
+	}
+	else{
+		return false;
+	}
 }
 
 /// Device-specific implementations of bootloader operations
