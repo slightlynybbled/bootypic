@@ -60,15 +60,7 @@
 
 #define NUM_OF_TMR2_OVERFLOWS (uint16_t)((BOOT_LOADER_TIME/TIME_PER_TMR2_50k) + 1.0)
 
-#if defined(__dsPIC33EP32MC204__)
 #define PLATFORM_STRING "dspic33ep32mc204"
-#define APPLICATION_START_ADDRESS 0x1000
-#elif defined(__dsPIC33EP64MC504__)
-#define PLATFORM_STRING "dspic33ep64mc504"
-#define APPLICATION_START_ADDRESS 0x1400
-#else 
-#warning "your device may not be supported"
-#endif
 
 /**
  * @brief initializes the oscillator
